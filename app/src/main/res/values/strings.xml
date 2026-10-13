@@ -1,0 +1,89 @@
+<resources>
+    <string name="app_name">Practice Speaking</string>
+
+    <!-- Components -->
+    <string name="cd_back">Back</string>
+    <string name="cd_replay">Play again</string>
+    <string name="cd_show_secret">Show key</string>
+    <string name="cd_hide_secret">Hide key</string>
+    <string name="cd_clear_search">Clear search</string>
+    <string name="cd_thinking">Tutor is thinking</string>
+    <string name="cd_correction">Correction</string>
+    <string name="mic_idle">Hold to talk</string>
+    <string name="mic_listening">Listening…</string>
+    <string name="mic_thinking">Thinking…</string>
+    <string name="mic_speaking">Speaking…</string>
+    <string name="mic_disabled">Microphone unavailable</string>
+    <string name="command_slower">Slower</string>
+    <string name="command_harder">Harder</string>
+    <string name="command_translate">Translate</string>
+    <string name="command_end_session">End session</string>
+    <string name="summary_title">Session summary</string>
+    <string name="summary_mistakes">Mistakes</string>
+    <string name="summary_new_words">New words</string>
+    <string name="summary_tip">Tip</string>
+    <string name="search_hint">Search your conversations</string>
+    <string name="cd_send">Send</string>
+    <string name="chat_input_hint">Or type here</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_provider">AI provider</string>
+    <string name="settings_api_key">%1$s API key</string>
+    <string name="settings_key_stays_here">Stored encrypted on this phone and sent only to the provider.</string>
+    <string name="settings_test_key">Test key</string>
+    <string name="settings_get_key">Where do I get a key?</string>
+    <string name="settings_key_ok">Key works</string>
+    <string name="settings_model">Model</string>
+    <string name="settings_model_hint">Leave blank to use %1$s.</string>
+    <string name="settings_language">Language to practise</string>
+    <string name="settings_start">Start talking</string>
+    <string name="settings_theme">Appearance</string>
+    <string name="theme_system">Match phone</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+
+    <!-- Errors -->
+    <string name="error_invalid_key">Check your API key</string>
+    <string name="error_model_not_found">That model isn\'t available with this key. Check the model in Settings.</string>
+    <string name="error_rate_limited">Too many requests. Wait a moment, then retry.</string>
+    <string name="error_provider_down">The AI service isn\'t responding right now. Try again in a minute.</string>
+    <string name="error_offline">No connection. Check your internet and retry.</string>
+    <string name="error_refused">The tutor wouldn\'t answer that one. Try saying it another way.</string>
+    <string name="error_context_too_long">This conversation is too long for the model. End it and start a new one.</string>
+    <string name="error_empty_reply">The tutor sent an empty reply. Try again.</string>
+    <string name="error_unknown">Something went wrong (%1$s): %2$s</string>
+    <string name="speech_nothing_heard">Didn\'t catch that. Hold the mic the whole time you speak.</string>
+    <string name="speech_no_permission">Allow the microphone to talk to the tutor, or type instead.</string>
+    <string name="speech_language_unavailable">Speech recognition for this language isn\'t installed on this phone. You can type instead.</string>
+    <string name="speech_service_unavailable">Speech recognition needs a connection right now. Try again, or type.</string>
+    <string name="speech_busy">The microphone is busy. Try again in a moment.</string>
+    <string name="speech_voice_missing">No voice is installed for this language, so replies stay silent.</string>
+    <string name="speech_failed">Speech recognition failed (%1$s). You can type instead.</string>
+    <string name="storage_key_unreadable">Your saved key can\'t be read on this phone anymore. Paste it again in Settings.</string>
+    <string name="storage_database_failed">Couldn\'t read or save your conversations (%1$s). Free up some space and try again.</string>
+    <string name="action_open_settings">Open Settings</string>
+    <string name="action_retry">Retry</string>
+    <string name="action_dismiss">OK</string>
+    <string name="action_install_voice">Install voice</string>
+    <string name="action_app_settings">App settings</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_cancel">Cancel</string>
+
+    <!-- Conversation -->
+    <string name="conversation_needs_key">Add an API key in Settings to start talking.</string>
+    <string name="conversation_empty">Hold the mic and say hello to %1$s.</string>
+    <string name="conversation_long_session">Long session. End it and start fresh?</string>
+
+    <!-- History and search -->
+    <string name="history_new_conversation">New conversation</string>
+    <string name="history_empty">No conversations yet.</string>
+    <string name="history_delete_title">Delete this session?</string>
+    <string name="history_delete_body">This removes \"%1$s\" and all its messages.</string>
+    <string name="search_no_results">Nothing matches \"%1$s\".</string>
+    <string name="session_missing">This session no longer exists.</string>
+    <plurals name="message_count">
+        <item quantity="one">%d message</item>
+        <item quantity="other">%d messages</item>
+    </plurals>
+</resources>

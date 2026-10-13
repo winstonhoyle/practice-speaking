@@ -1,17 +1,26 @@
-# Compiled class file
+# Secrets and machine-specific config
+.env
+.env.*
+local.properties
+*.jks
+*.keystore
+keystore.properties
+google-services.json
+
+# Owner's working notes (spec and handoff for AI sessions)
+PROMPT.md
+
+# Java
 *.class
-
-# Log file
 *.log
-
-# BlueJ files
 *.ctxt
-
-# Mobile Tools for Java (J2ME)
 .mtj.tmp/
+hs_err_pid*
+replay_pid*
 
-# Package Files #
+# Package files (the Gradle wrapper jar is the one exception)
 *.jar
+!gradle/wrapper/gradle-wrapper.jar
 *.war
 *.nar
 *.ear
@@ -19,9 +28,51 @@
 *.tar.gz
 *.rar
 
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
-hs_err_pid*
-replay_pid*
+# Gradle
+.gradle/
+build/
+!src/**/build/
+.gradletasknamecache
 
-# Kotlin Gradle plugin data, see https://kotlinlang.org/docs/whatsnew20.html#new-directory-for-kotlin-data-in-gradle-projects
+# Kotlin
 .kotlin/
+*.salive
+
+# Android
+*.apk
+*.aab
+*.ap_
+*.dex
+captures/
+.externalNativeBuild/
+.cxx/
+output-metadata.json
+lint/intermediates/
+lint/generated/
+lint/outputs/
+lint/tmp/
+
+# IntelliJ IDEA and Android Studio
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+.navigation/
+
+# VS Code
+.vscode/
+
+# Python tooling (palette check)
+.venv/
+__pycache__/
+*.py[cod]
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Local-only tooling (the color-blind palette check) and the per-screen screenshots behind the README montages.
+tools/
+docs/images/screens/

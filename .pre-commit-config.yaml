@@ -1,0 +1,64 @@
+# Set up once per clone: `pre-commit install`. Run by hand: `pre-commit run --all-files`.
+# The Gradle hooks use the same tasks as CI; skip them for one commit with SKIP=spotless,detekt.
+# Generated or verbatim files the hygiene hooks must leave alone: Room's schema export and license texts.
+exclude: ^(app/schemas/|docs/licenses/.*\.txt$)
+repos:
+  # -----------------------------
+  # General repo hygiene
+  # -----------------------------
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+        # Two trailing spaces are a line break in Markdown (.editorconfig keeps them too).
+        args: ["--markdown-linebreak-ext=md"]
+      - id: mixed-line-ending
+        args: ["--fix=lf"]
+        exclude: ^gradlew\.bat$
+      - id: check-yaml
+      - id: check-xml
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: check-executables-have-shebangs
+      - id: check-added-large-files
+        args: ["--maxkb=1024"]
+      - id: detect-private-key
+
+  # -----------------------------
+  # Secrets and local-only files
+  # -----------------------------
+  - repo: local
+    hooks:
+      - id: no-local-files
+        name: block keys, signing files, and local config
+        language: fail
+        entry: "This file must stay local (keys, signing, or machine config). Unstage it with: git restore --staged"
+        files: (^|/)(\.env(\..*)?|local\.properties|keystore\.properties|PROMPT\.md)$|\.(jks|keystore|p12)$
+
+      - id: no-api-keys
+        name: block pasted API keys
+        language: pygrep
+        # Real Anthropic, OpenAI, and Google keys. Placeholders such as "sk-ant-…" or test values are too short to match.
+        entry: (sk-ant-[A-Za-z0-9_-]{40,}|sk-(proj-)?[A-Za-z0-9]{32,}|AIza[0-9A-Za-z_-]{35})
+        exclude: ^\.pre-commit-config\.yaml$
+
+  # -----------------------------
+  # Kotlin formatting + static analysis (same tasks as CI)
+  # -----------------------------
+  - repo: local
+    hooks:
+      - id: spotless
+        name: spotless (ktlint format)
+        # Formats in place; pre-commit fails the commit when files change, so review and re-stage them.
+        entry: ./gradlew spotlessApply --quiet
+        language: system
+        files: \.(kt|kts)$|^\.editorconfig$
+        pass_filenames: false
+
+      - id: detekt
+        name: detekt
+        entry: ./gradlew detekt --quiet
+        language: system
+        files: \.(kt|kts)$|^config/detekt/
+        pass_filenames: false

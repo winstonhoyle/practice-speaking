@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v4
+      # The pre-commit hygiene and secret hooks, in case a commit skipped them. The Gradle hooks run as their own step below.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pre-commit && SKIP=spotless,detekt pre-commit run --all-files --show-diff-on-failure
+      # Formatting (ktlint via Spotless) and static analysis (detekt) fail fast, before the slower steps.
+      - run: ./gradlew spotlessCheck detekt
+      # Live provider tests are skipped: they only run with -Plive and a local .env.
+      - run: ./gradlew lint testDebugUnitTest assembleDebug

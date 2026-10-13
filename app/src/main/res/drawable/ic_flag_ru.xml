@@ -1,0 +1,16 @@
+<!-- Flag of Russia from flag-icons 7.5.0 (MIT), converted from SVG. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="20dp"
+    android:height="15dp"
+    android:viewportWidth="640"
+    android:viewportHeight="480">
+  <path
+      android:pathData="M0,0h640v160H0z"
+      android:fillColor="#fff"/>
+  <path
+      android:pathData="M0,160h640v160H0z"
+      android:fillColor="#0039a6"/>
+  <path
+      android:pathData="M0,320h640v160H0z"
+      android:fillColor="#d52b1e"/>
+</vector>

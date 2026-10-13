@@ -1,0 +1,42 @@
+# Only the differences from detekt's defaults (buildUponDefaultConfig = true).
+
+naming:
+  FunctionNaming:
+    # Composables are PascalCase by convention.
+    ignoreAnnotated: ['Composable']
+  TopLevelPropertyNaming:
+    constantPattern: '[A-Z][A-Za-z0-9_]*'
+  MatchingDeclarationName:
+    # Compose files are named after their main composable even when a small enum or annotation sits next to it.
+    active: false
+
+complexity:
+  CyclomaticComplexMethod:
+    # A flat `when` that maps one value to another is a table, not branching logic.
+    ignoreSimpleWhenEntries: true
+  TooManyFunctions:
+    # ViewModels expose one function per UI event; private helpers don't count.
+    ignorePrivate: true
+    thresholdInClasses: 15
+    excludes: ['**/test/**', '**/ui/components/**']
+  LongParameterList:
+    # Stateless screens take their state and every event as parameters.
+    ignoreAnnotated: ['Composable']
+  LongMethod:
+    ignoreAnnotated: ['Composable']
+
+style:
+  MagicNumber:
+    # Tokens are defined as literals in ui/theme; tests and the debug gallery use literal sample data.
+    excludes: ['**/test/**', '**/debug/**', '**/ui/theme/**']
+    ignoreAnnotated: ['Preview', 'PreviewPsThemes']
+  UnusedPrivateMember:
+    ignoreAnnotated: ['Preview', 'PreviewPsThemes']
+  MaxLineLength:
+    maxLineLength: 140
+    # ktlint already enforces this; detekt's version can't skip raw strings in tests.
+    active: false
+  ReturnCount:
+    max: 3
+  WildcardImport:
+    active: true
