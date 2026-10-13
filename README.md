@@ -8,7 +8,15 @@ An Android app for practising a foreign language out loud. You hold the mic and 
 
 It supports Russian, French, Portuguese (Brazil), German, and Spanish (Mexico). You bring your own API key from Anthropic, OpenAI, or Google Gemini.
 
-The latest signed APK is on the [Releases page](https://github.com/winstonhoyle/practice-speaking/releases/latest).
+## Install it on your phone
+
+1. On your Android phone (Android 8 or newer), open the [latest release](https://github.com/winstonhoyle/practice-speaking/releases/latest) and download the `.apk` file.
+2. Open the download. Android asks you to allow your browser to install apps; allow it.
+3. Play Protect may say it doesn't recognize the developer, because the app isn't on Google Play. Choose to install anyway.
+4. Get an API key from [Anthropic](https://platform.claude.com/settings/keys), [OpenAI](https://platform.openai.com/api-keys), or [Google AI Studio](https://aistudio.google.com/apikey). The app has no built-in key, and the provider bills your account for what you use.
+5. Open Practice Speaking, paste the key, tap Test key, pick a language, and start talking.
+
+New versions install over the old one and keep your sessions.
 
 ![A conversation with a correction, the end-of-session summary, History, search, a saved session, and Settings, in the light theme](docs/images/screens-light.png)
 
@@ -122,7 +130,7 @@ On an emulator, use a Google Play system image so speech recognition and Google 
 ./gradlew spotlessCheck detekt lint testDebugUnitTest assembleDebug   # what CI runs
 ```
 
-The offline suite covers the response parser, the prompt renderer (the Russian render must match the original prompt byte for byte), Room and full-text search, settings storage, the error table, and the Conversation and Settings ViewModels with a scripted fake tutor. Every provider runs the same `TutorModelContractTest` against MockWebServer: error mapping, refusals, context-length errors, history replay, the key check, and the model list.
+The offline suite covers the response parser, the prompt renderer (the Russian render must match the original prompt byte for byte), Room and full-text search, settings storage, the error table, the Conversation, Settings, and History ViewModels with a scripted fake tutor, and database failures on the read-only screens. Every provider runs the same `TutorModelContractTest` against MockWebServer: error mapping, refusals, context-length errors, history replay, the key check, and the model list.
 
 Live tests make real API calls, so they only run when asked. Put a key in a `.env` file at the repo root (it's gitignored) and pass `-Plive`:
 
@@ -147,17 +155,29 @@ When Spotless reformats a file, the commit stops so you can review the change an
 
 ## Releases
 
-Signed APKs are attached to [GitHub Releases](https://github.com/winstonhoyle/practice-speaking/releases). Pushing a tag such as `v1.0.0` runs `.github/workflows/release.yml`, which runs the checks and tests, builds the release APK with version `1.0.0`, and attaches it to a new release.
+Pushing a tag such as `v1.0.0` runs `.github/workflows/release.yml`. It runs the checks and tests, builds the APK as version `1.0.0`, signs it, and attaches it to a new [GitHub Release](https://github.com/winstonhoyle/practice-speaking/releases).
 
-The signing key stays out of the repo. To set it up once:
+Android only installs signed apps, and an update must be signed with the same key as the version it replaces. The key never goes in the repo: it lives in a file on your machine and in encrypted repository secrets, which forks and pull requests can't read. To set it up once:
 
 ```sh
+mkdir -p ~/keys
 keytool -genkeypair -v -keystore ~/keys/practice-speaking.jks -alias practice-speaking \
-  -keyalg RSA -keysize 4096 -validity 10000
-base64 -w0 ~/keys/practice-speaking.jks   # paste into the RELEASE_KEYSTORE_BASE64 secret
+  -keyalg RSA -keysize 4096 -validity 10000      # asks for one password
+
+R=<owner>/practice-speaking
+base64 -w0 ~/keys/practice-speaking.jks | gh secret set RELEASE_KEYSTORE_BASE64 -R $R
+gh secret set RELEASE_KEY_ALIAS -R $R --body practice-speaking
+gh secret set RELEASE_STORE_PASSWORD -R $R     # the keytool password
+gh secret set RELEASE_KEY_PASSWORD -R $R       # the same password
 ```
 
-In the repo's Actions secrets, add `RELEASE_KEYSTORE_BASE64`, `RELEASE_STORE_PASSWORD`, `RELEASE_KEY_ALIAS`, and `RELEASE_KEY_PASSWORD`. For signed local builds, create a gitignored `keystore.properties` at the repo root:
+Then release:
+
+```sh
+git tag v0.1.0 && git push origin v0.1.0
+```
+
+To build a signed copy on your own machine instead, create a gitignored `keystore.properties` at the repo root:
 
 ```properties
 RELEASE_STORE_FILE=/home/you/keys/practice-speaking.jks
@@ -168,7 +188,11 @@ RELEASE_KEY_PASSWORD=...
 
 Without that file, `assembleRelease` signs with the debug key so the build can still be installed and tested.
 
-Keep a backup of the keystore and its passwords. An app signed with a lost key can't be updated in place.
+Back up the keystore and its password outside the repo, for example in a password manager. If you lose them, phones that have the app can't install your updates.
+
+## Security
+
+To report a security problem, see [SECURITY.md](SECURITY.md).
 
 ## License
 

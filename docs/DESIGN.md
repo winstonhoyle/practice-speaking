@@ -2,7 +2,7 @@
 
 Practice Speaking is built from one small component library. Feature screens only arrange components; they never style anything themselves.
 
-**Mood:** calm, friendly, uncluttered. It should feel like a conversation, not a classroom. Each screen has one clear action (the mic).
+The mood is calm and uncluttered, closer to a conversation than a classroom. Each screen has one clear action, usually the mic.
 
 | Light | Dark |
 |---|---|
@@ -28,7 +28,7 @@ The command should print nothing.
 
 ## Tokens (`ui/theme/`)
 
-Material 3 with a **fixed** brand scheme (dynamic color off), so screenshots look the same on every device. Light and dark are both first-class.
+Material 3 with a fixed brand scheme (dynamic color off), so the app and its screenshots look the same on every device. Light and dark get equal care.
 
 ### Color
 
@@ -43,7 +43,7 @@ Material 3 with a **fixed** brand scheme (dynamic color off), so screenshots loo
 | `userBubble` / `tutorBubble` | The two speakers, clearly different |
 | `mistake` / `mistakeContainer` | Amber: underlined mistakes, struck-through text in correction cards |
 | `success` / `successContainer` | Teal-green: "Test key" ✓, summary tip |
-| Language accents (RU FR PT DE ES) | **Badges only.** Never replace a semantic color |
+| Language accents (RU FR PT DE ES) | Badges only; never in place of a semantic color |
 
 Material roles live in `PsLightColorScheme` / `PsDarkColorScheme`. The extra roles live in `PsExtendedColors`, provided through a `CompositionLocal`.
 
@@ -82,11 +82,11 @@ Sizes are `sp`, so they follow the system font scale. Every component has a 1.5�
 
 ### Motion
 
-Subtle. The mic pulses while listening, three dots pulse while the tutor thinks, and (once the conversation screen exists) new messages fade and slide in. When the system "Remove animations" setting is on, `rememberReduceMotion()` turns every animation off.
+Motion stays small. The mic pulses while listening, three dots pulse while the tutor thinks, and new messages fade and slide in. When the system "Remove animations" setting is on, `rememberReduceMotion()` turns every animation off.
 
 ### Icons
 
-Material icons (Apache-2.0), bundled as **vector drawables converted from SVG** in `res/drawable/ic_*.xml` and exposed through `PsIcons`. There's no icon library dependency. To add an icon, convert its SVG to `res/drawable/ic_<name>.xml` and add one line to `PsIcons`.
+Material icons (Apache-2.0), bundled as vector drawables converted from SVG in `res/drawable/ic_*.xml` and exposed through `PsIcons`. There's no icon library dependency. To add an icon, convert its SVG to `res/drawable/ic_<name>.xml` and add one line to `PsIcons`.
 
 Provider logos (`ic_logo_*.xml`) come from Simple Icons and are drawn in one color, tinted like any other icon. Each `Provider` names its own logo, so the UI never picks one by vendor. Flags (`ic_flag_*.xml`) come from flag-icons and keep their real colors; every language is pinned to one country's variant, so Portuguese shows Brazil and Spanish shows Mexico. `FlagImage` draws them at 4:3 with a hairline edge so white stripes stay visible on a white surface. Sources and licenses are in [`licenses/TRADEMARKS.md`](licenses/TRADEMARKS.md).
 
@@ -100,7 +100,7 @@ The launcher icon is an adaptive vector: the brand teal (`Teal40`) behind a whit
 
 ## Components (`ui/components/`)
 
-Each component is stateless (state in, events out), takes `modifier: Modifier = Modifier`, and has `@PreviewPsThemes` (light, dark, 1.5× font). Components take plain strings, never vendor types, so the UI stays vendor-agnostic.
+Each component is stateless (state in, events out), takes `modifier: Modifier = Modifier`, and has `@PreviewPsThemes` (light, dark, 1.5× font). Components take plain strings or the app's own types (`Provider`, `TutorLanguage`), never SDK types, so the UI stays vendor-agnostic.
 
 | Component | Purpose |
 |---|---|
@@ -166,7 +166,7 @@ Every string a person reads follows these rules: UI text, KDoc and comments, the
 - No "not X but Y" framing, no closing line that restates the paragraph, no lists of three added for rhythm.
 - No bold labels at the start of every bullet. Bold one term when the reader would otherwise miss it.
 - A comment explains why, not what. If the code already says it, delete the comment.
-- Describe the code as it is now. The history of a change belongs in its commit message, not in a comment.
+- Describe the code as it is now, and leave the history of a change to its commit message.
 
 ### The tutor prompt
 
@@ -188,14 +188,14 @@ Every string a person reads follows these rules: UI text, KDoc and comments, the
 
 ## Color and access
 
-The palette was measured, not judged by eye, against two targets in both themes:
+Both themes were measured against two targets:
 
 1. WCAG contrast for every text and icon pair the UI uses: 4.5:1 for text, 3:1 for icons and large text.
 2. Colors that carry meaning stay apart under simulated protanopia, deuteranopia, and tritanopia (ΔE ≥ 15 in CAM02-UCS). Mistake vs. success and learner vs. tutor bubble meet it.
 
 A new color should meet both targets too. Language badges and the correction/tip card backgrounds don't always meet the second one. Five accents can't all stay apart for every type of color blindness, so every badge also shows its flag and code (RU, FR, PT, DE, ES), and the cards carry a strikethrough or a "Tip" heading.
 
-That's the general rule: color is never the only signal. A mistake is underlined in the bubble and struck through with an arrow in the card. Key status shows ✓ or ✗ next to its text.
+Color is never the only signal anywhere in the app. A mistake is underlined in the bubble and struck through with an arrow in the card. Key status shows ✓ or ✗ next to its text.
 
 The current pairs:
 
