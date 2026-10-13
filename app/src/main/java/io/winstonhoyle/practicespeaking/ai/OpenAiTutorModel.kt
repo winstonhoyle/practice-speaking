@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.openai.client.OpenAIClient
 import com.openai.client.okhttp.OpenAIOkHttpClient
 import com.openai.core.JsonValue
+import com.openai.errors.BadRequestException
 import com.openai.errors.OpenAIIoException
 import com.openai.errors.OpenAIServiceException
 import com.openai.models.Reasoning
@@ -21,7 +22,8 @@ import io.winstonhoyle.practicespeaking.error.TutorError
 /**
  * OpenAI through the official Java SDK and the Responses API. Requests are stateless
  * (`store = false`), so each assistant turn is replayed from its saved output items,
- * including encrypted reasoning.
+ * including encrypted reasoning. Older chat models reject the reasoning settings; the first
+ * such rejection turns them off for this model and the request is sent again without them.
  */
 class OpenAiTutorModel internal constructor(override val model: String, private val client: OpenAIClient) : TutorModel {
     constructor(apiKey: String, model: String) : this(
@@ -31,21 +33,19 @@ class OpenAiTutorModel internal constructor(override val model: String, private 
 
     override val provider = Provider.OPENAI
 
+    @Volatile private var reasoning = true
+
     override suspend fun reply(systemPrompt: String, history: List<Turn>): Result<TutorReply> =
         call {
-            val params =
-                ResponseCreateParams
-                    .builder()
-                    .model(model)
-                    .instructions(systemPrompt)
-                    .inputOfResponse(history.flatMap(::toInputItems))
-                    .maxOutputTokens(TutorLimits.MAX_OUTPUT_TOKENS)
-                    .reasoning(Reasoning.builder().effort(ReasoningEffort.LOW).build())
-                    .store(false)
-                    .addInclude(ResponseIncludable.REASONING_ENCRYPTED_CONTENT)
-                    .build()
-
-            val response = client.responses().create(params)
+            val input = history.flatMap(::toInputItems)
+            val response =
+                try {
+                    client.responses().create(params(systemPrompt, input))
+                } catch (e: BadRequestException) {
+                    if (!reasoning || !UNSUPPORTED_REASONING.containsMatchIn(e.message.orEmpty())) throw e
+                    reasoning = false
+                    client.responses().create(params(systemPrompt, input))
+                }
             response.usage().ifPresent {
                 logUsage(provider, it.inputTokens(), it.outputTokens(), it.inputTokensDetails().cachedTokens())
             }
@@ -76,6 +76,21 @@ class OpenAiTutorModel internal constructor(override val model: String, private 
         }
 
     private fun isChatModel(id: String): Boolean = CHAT_FAMILY.containsMatchIn(id) && !NOT_CHAT.containsMatchIn(id)
+
+    private fun params(systemPrompt: String, input: List<ResponseInputItem>): ResponseCreateParams =
+        ResponseCreateParams
+            .builder()
+            .model(model)
+            .instructions(systemPrompt)
+            .inputOfResponse(input)
+            .maxOutputTokens(TutorLimits.MAX_OUTPUT_TOKENS)
+            .store(false)
+            .apply {
+                if (reasoning) {
+                    reasoning(Reasoning.builder().effort(ReasoningEffort.LOW).build())
+                    addInclude(ResponseIncludable.REASONING_ENCRYPTED_CONTENT)
+                }
+            }.build()
 
     private fun isRefusal(response: Response): Boolean {
         val filtered =
@@ -121,6 +136,10 @@ class OpenAiTutorModel internal constructor(override val model: String, private 
         val json =
             SdkJson({ JsonValue.from(it).convert(JsonNode::class.java)!! }, { node, type -> JsonValue.fromJsonNode(node).convert(type) })
         val outputListType = object : TypeReference<List<ResponseOutputItem>>() {}
+
+        /** OpenAI's 400 for a reasoning setting on a model without reasoning, e.g. "Unsupported parameter: 'reasoning.effort'". */
+        val UNSUPPORTED_REASONING =
+            Regex("reasoning[^\\n]*(not supported|unsupported)|unsupported[^\\n]*reasoning", RegexOption.IGNORE_CASE)
 
         /** GPT and o-series models answer text. */
         val CHAT_FAMILY = Regex("^(gpt-|chatgpt-|o\\d)")

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.openai.client.okhttp.OpenAIOkHttpClient
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class OpenAiTutorModelTest : TutorModelContractTest() {
@@ -76,6 +77,34 @@ class OpenAiTutorModelTest : TutorModelContractTest() {
         assertEquals("reasoning", input.path(1).path("type").asText())
         assertEquals("enc-1", input.path(1).path("encrypted_content").asText())
         assertEquals("user", input.path(3).path("role").asText())
+    }
+
+    @Test
+    fun aModelWithoutReasoningIsRetriedWithoutItOnce() {
+        enqueue(
+            """{"error":{"message":"Unsupported parameter: 'reasoning.effort' is not supported with this model.","type":"invalid_request_error","param":"reasoning.effort","code":"unsupported_parameter"}}""",
+            400,
+        )
+        enqueue(replyBody("Привет!"))
+        enqueue(replyBody("Хорошо."))
+        val model = model()
+        assertEquals("Привет!", replyTo(model, Turn(Role.USER, "Привет")).getOrThrow().text)
+        replyTo(model, Turn(Role.USER, "Привет"))
+
+        assertFalse(mapper.readTree(server.takeRequest().body.readUtf8()).path("reasoning").isMissingNode)
+        repeat(2) {
+            val body = mapper.readTree(server.takeRequest().body.readUtf8())
+            assertTrue(body.path("reasoning").isMissingNode)
+            assertTrue(body.path("include").isMissingNode)
+        }
+        assertEquals(3, server.requestCount)
+    }
+
+    @Test
+    fun otherBadRequestsAreNotRetried() {
+        enqueue(errorBody(), 400)
+        assertTrue(replyTo(model(), Turn(Role.USER, "x")).isFailure)
+        assertEquals(1, server.requestCount)
     }
 
     private fun response(output: String) =

@@ -20,8 +20,14 @@ import io.winstonhoyle.practicespeaking.error.TutorError
 /**
  * Claude through the official Java SDK. The system prompt and the growing history are both
  * cached, and each assistant turn is replayed from its full `content` (thinking included).
+ * Low effort is sent only to models whose metadata says they support it; older models reject
+ * the parameter. [lowEffort] starts unknown and is looked up once, before the first reply.
  */
-class AnthropicTutorModel internal constructor(override val model: String, private val client: AnthropicClient) : TutorModel {
+class AnthropicTutorModel internal constructor(
+    override val model: String,
+    private val client: AnthropicClient,
+    @Volatile private var lowEffort: Boolean? = null,
+) : TutorModel {
     constructor(apiKey: String, model: String) : this(
         model,
         AnthropicOkHttpClient.builder().apiKey(apiKey).build(),
@@ -32,12 +38,13 @@ class AnthropicTutorModel internal constructor(override val model: String, priva
     override suspend fun reply(systemPrompt: String, history: List<Turn>): Result<TutorReply> =
         call {
             val cache = CacheControlEphemeral.builder().build()
+            val useLowEffort = lowEffort ?: supportsLowEffort().also { lowEffort = it }
             val params =
                 MessageCreateParams
                     .builder()
                     .model(model)
                     .maxTokens(TutorLimits.MAX_OUTPUT_TOKENS)
-                    .outputConfig(OutputConfig.builder().effort(OutputConfig.Effort.LOW).build())
+                    .apply { if (useLowEffort) outputConfig(OutputConfig.builder().effort(OutputConfig.Effort.LOW).build()) }
                     .systemOfTextBlockParams(
                         listOf(
                             TextBlockParam
@@ -75,6 +82,15 @@ class AnthropicTutorModel internal constructor(override val model: String, priva
                 .autoPager()
                 .map { it.id() }
         }
+
+    /** Reads the model's capabilities (no tokens). A model that doesn't report them gets no effort setting. */
+    private fun supportsLowEffort(): Boolean =
+        client
+            .models()
+            .retrieve(model)
+            .capabilities()
+            .map { runCatching { it.effort().low().supported() }.getOrDefault(false) }
+            .orElse(false)
 
     private fun toMessageParam(turn: Turn): MessageParam {
         val builder = MessageParam.builder()
