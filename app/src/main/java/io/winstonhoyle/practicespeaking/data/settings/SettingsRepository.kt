@@ -3,8 +3,12 @@ package io.winstonhoyle.practicespeaking.data.settings
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import io.winstonhoyle.practicespeaking.ai.Provider
+import io.winstonhoyle.practicespeaking.ai.TokenUsage
+import io.winstonhoyle.practicespeaking.enumByName
+import io.winstonhoyle.practicespeaking.prompt.CefrLevel
 import io.winstonhoyle.practicespeaking.prompt.TutorLanguage
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -17,17 +21,29 @@ import kotlinx.coroutines.flow.map
 class SettingsRepository(private val store: DataStore<Preferences>, private val cipher: SecretCipher) {
     val provider: Flow<Provider> =
         store.data
-            .map { prefs -> Provider.entries.firstOrNull { it.name == prefs[PROVIDER] } ?: Provider.ANTHROPIC }
+            .map { prefs -> enumByName<Provider>(prefs[PROVIDER]) ?: Provider.ANTHROPIC }
             .distinctUntilChanged()
 
     val language: Flow<TutorLanguage> =
         store.data
-            .map { prefs -> TutorLanguage.entries.firstOrNull { it.name == prefs[LANGUAGE] } ?: TutorLanguage.RUSSIAN }
+            .map { prefs -> enumByName<TutorLanguage>(prefs[LANGUAGE]) ?: TutorLanguage.RUSSIAN }
+            .distinctUntilChanged()
+
+    /** The learner's CEFR level, which new sessions put into the tutor prompt. */
+    val level: Flow<CefrLevel> =
+        store.data
+            .map { prefs -> enumByName<CefrLevel>(prefs[LEVEL]) ?: CefrLevel.DEFAULT }
+            .distinctUntilChanged()
+
+    /** How fast the tutor speaks. */
+    val voiceSpeed: Flow<VoiceSpeed> =
+        store.data
+            .map { prefs -> enumByName<VoiceSpeed>(prefs[VOICE_SPEED]) ?: VoiceSpeed.DEFAULT }
             .distinctUntilChanged()
 
     val themeMode: Flow<ThemeMode> =
         store.data
-            .map { prefs -> ThemeMode.entries.firstOrNull { it.name == prefs[THEME] } ?: ThemeMode.System }
+            .map { prefs -> enumByName<ThemeMode>(prefs[THEME]) ?: ThemeMode.System }
             .distinctUntilChanged()
 
     /** The decrypted key, or null when none is saved or it can no longer be decrypted. */
@@ -48,11 +64,37 @@ class SettingsRepository(private val store: DataStore<Preferences>, private val 
             .map { prefs -> prefs[modelFor(provider)]?.ifBlank { null } ?: provider.defaultModel }
             .distinctUntilChanged()
 
+    /**
+     * Every token used with [provider] since the app was installed. It lives in settings, apart
+     * from sessions, so deleting a session doesn't lower it.
+     */
+    fun usage(provider: Provider): Flow<TokenUsage> =
+        store.data
+            .map { prefs ->
+                TokenUsage(
+                    prefs[usageKey(provider, "input")] ?: 0,
+                    prefs[usageKey(provider, "output")] ?: 0,
+                    prefs[usageKey(provider, "cached")] ?: 0,
+                )
+            }.distinctUntilChanged()
+
+    suspend fun addUsage(provider: Provider, usage: TokenUsage) {
+        store.edit {
+            it[usageKey(provider, "input")] = (it[usageKey(provider, "input")] ?: 0) + usage.input
+            it[usageKey(provider, "output")] = (it[usageKey(provider, "output")] ?: 0) + usage.output
+            it[usageKey(provider, "cached")] = (it[usageKey(provider, "cached")] ?: 0) + usage.cached
+        }
+    }
+
     /** Chooses the provider for new sessions. Each provider's key and model stay saved. */
     suspend fun setProvider(provider: Provider) = store.edit { it[PROVIDER] = provider.name }
 
     /** Light, dark, or follow the phone. */
     suspend fun setThemeMode(mode: ThemeMode) = store.edit { it[THEME] = mode.name }
+
+    suspend fun setLevel(level: CefrLevel) = store.edit { it[LEVEL] = level.name }
+
+    suspend fun setVoiceSpeed(speed: VoiceSpeed) = store.edit { it[VOICE_SPEED] = speed.name }
 
     /** The language new sessions practise. */
     suspend fun setLanguage(language: TutorLanguage) = store.edit { it[LANGUAGE] = language.name }
@@ -75,9 +117,13 @@ class SettingsRepository(private val store: DataStore<Preferences>, private val 
         val PROVIDER = stringPreferencesKey("provider")
         val LANGUAGE = stringPreferencesKey("language")
         val THEME = stringPreferencesKey("theme")
+        val LEVEL = stringPreferencesKey("level")
+        val VOICE_SPEED = stringPreferencesKey("voice_speed")
 
         fun keyFor(provider: Provider) = stringPreferencesKey("api_key_${provider.name}")
 
         fun modelFor(provider: Provider) = stringPreferencesKey("model_${provider.name}")
+
+        fun usageKey(provider: Provider, kind: String) = longPreferencesKey("tokens_${kind}_${provider.name}")
     }
 }

@@ -19,6 +19,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.winstonhoyle.practicespeaking.R
 import io.winstonhoyle.practicespeaking.ai.Provider
 import io.winstonhoyle.practicespeaking.data.settings.ThemeMode
+import io.winstonhoyle.practicespeaking.data.settings.VoiceSpeed
+import io.winstonhoyle.practicespeaking.prompt.CefrLevel
 import io.winstonhoyle.practicespeaking.prompt.TutorLanguage
 import io.winstonhoyle.practicespeaking.ui.components.FlagImage
 import io.winstonhoyle.practicespeaking.ui.components.LoadingState
@@ -29,9 +31,11 @@ import io.winstonhoyle.practicespeaking.ui.components.PsButtonStyle
 import io.winstonhoyle.practicespeaking.ui.components.PsDropdown
 import io.winstonhoyle.practicespeaking.ui.components.PsTextField
 import io.winstonhoyle.practicespeaking.ui.components.PsTopBar
+import io.winstonhoyle.practicespeaking.ui.components.SecondaryText
 import io.winstonhoyle.practicespeaking.ui.components.SecretTextField
 import io.winstonhoyle.practicespeaking.ui.components.StatusLine
 import io.winstonhoyle.practicespeaking.ui.errorMessage
+import io.winstonhoyle.practicespeaking.ui.formatCount
 import io.winstonhoyle.practicespeaking.ui.theme.PsTheme
 
 @Composable
@@ -44,6 +48,8 @@ fun SettingsRoute(viewModel: SettingsViewModel, onBack: (() -> Unit)?, onStart: 
         onApiKey = viewModel::updateApiKey,
         onModel = viewModel::updateModel,
         onLanguage = viewModel::selectLanguage,
+        onLevel = viewModel::selectLevel,
+        onVoiceSpeed = viewModel::selectVoiceSpeed,
         onThemeMode = viewModel::selectThemeMode,
         onTestKey = viewModel::testKey,
         onStart = onStart,
@@ -58,6 +64,8 @@ fun SettingsScreen(
     onApiKey: (String) -> Unit,
     onModel: (String) -> Unit,
     onLanguage: (TutorLanguage) -> Unit,
+    onLevel: (CefrLevel) -> Unit,
+    onVoiceSpeed: (VoiceSpeed) -> Unit,
     onThemeMode: (ThemeMode) -> Unit,
     onTestKey: () -> Unit,
     onStart: () -> Unit,
@@ -95,6 +103,17 @@ fun SettingsScreen(
                 supportingText = stringResource(R.string.settings_model_hint, state.provider.defaultModel),
                 suggestions = state.models,
             )
+            val usage = state.usage
+            SecondaryText(
+                stringResource(
+                    R.string.settings_usage,
+                    state.provider.shortName,
+                    formatCount(usage.input),
+                    formatCount(usage.cached),
+                    formatCount(usage.output),
+                ),
+                maxLines = Int.MAX_VALUE,
+            )
             PsDropdown(
                 label = stringResource(R.string.settings_language),
                 options = TutorLanguage.entries,
@@ -102,6 +121,21 @@ fun SettingsScreen(
                 optionLabel = { it.displayName },
                 onSelect = onLanguage,
                 optionIcon = { FlagImage(it, width = PsTheme.sizes.icon) },
+            )
+            PsDropdown(
+                label = stringResource(R.string.settings_level),
+                options = CefrLevel.entries,
+                selected = state.level,
+                optionLabel = { "${it.name} · ${it.label}" },
+                onSelect = onLevel,
+            )
+            val speedLabels = VoiceSpeed.entries.associateWith { stringResource(it.label) }
+            PsDropdown(
+                label = stringResource(R.string.settings_voice_speed),
+                options = VoiceSpeed.entries,
+                selected = state.voiceSpeed,
+                optionLabel = speedLabels::getValue,
+                onSelect = onVoiceSpeed,
             )
             val themeLabels = ThemeMode.entries.associateWith { stringResource(it.label) }
             PsDropdown(
@@ -153,6 +187,14 @@ private fun ApiKeySection(state: SettingsUiState, onApiKey: (String) -> Unit, on
         }
     }
 }
+
+private val VoiceSpeed.label: Int
+    get() =
+        when (this) {
+            VoiceSpeed.Slow -> R.string.voice_speed_slow
+            VoiceSpeed.Relaxed -> R.string.voice_speed_relaxed
+            VoiceSpeed.Normal -> R.string.voice_speed_normal
+        }
 
 private val ThemeMode.label: Int
     get() =

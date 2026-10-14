@@ -24,10 +24,14 @@ import io.winstonhoyle.practicespeaking.ui.settings.SettingsViewModel
 object Routes {
     const val HISTORY = "history"
     const val SETTINGS = "settings"
-    const val CONVERSATION = "conversation"
+
+    /** A new conversation, or with `sessionId` a saved one to continue. */
+    const val CONVERSATION = "conversation?sessionId={sessionId}"
     const val SESSION = "session/{sessionId}?messageId={messageId}"
 
     fun session(sessionId: Long, messageId: Long?) = "session/$sessionId?messageId=${messageId ?: -1}"
+
+    fun conversation(continueSessionId: Long? = null) = "conversation" + (continueSessionId?.let { "?sessionId=$it" } ?: "")
 }
 
 /**
@@ -41,7 +45,7 @@ fun AppNavHost(container: AppContainer, startOnSettings: Boolean, nav: NavHostCo
             HistoryRoute(
                 viewModel = screenViewModel { HistoryViewModel(container.sessions) },
                 onOpenSession = { session, message -> nav.navigate(Routes.session(session, message)) },
-                onNewConversation = { nav.navigate(Routes.CONVERSATION) },
+                onNewConversation = { nav.navigate(Routes.conversation()) },
                 onOpenSettings = { nav.navigate(Routes.SETTINGS) },
             )
         }
@@ -54,14 +58,24 @@ fun AppNavHost(container: AppContainer, startOnSettings: Boolean, nav: NavHostCo
                     if (nav.previousBackStackEntry?.destination?.route == Routes.CONVERSATION) {
                         nav.popBackStack()
                     } else {
-                        nav.navigate(Routes.CONVERSATION) {
+                        nav.navigate(Routes.conversation()) {
                             popUpTo(nav.graph.id) { inclusive = true }
                         }
                     }
                 },
             )
         }
-        composable(Routes.CONVERSATION) {
+        composable(
+            Routes.CONVERSATION,
+            arguments =
+                listOf(
+                    navArgument("sessionId") {
+                        type = NavType.LongType
+                        defaultValue = -1L
+                    },
+                ),
+        ) { entry ->
+            val continueSessionId = entry.arguments?.getLong("sessionId")?.takeIf { it >= 0 }
             ConversationRoute(
                 viewModel =
                     screenViewModel {
@@ -71,6 +85,8 @@ fun AppNavHost(container: AppContainer, startOnSettings: Boolean, nav: NavHostCo
                             container.prompts,
                             container.tutorModels,
                             container.speaker,
+                            container.translator,
+                            continueSessionId,
                         )
                     },
                 onOpenSettings = { nav.navigate(Routes.SETTINGS) },
@@ -92,8 +108,20 @@ fun AppNavHost(container: AppContainer, startOnSettings: Boolean, nav: NavHostCo
             val sessionId = entry.arguments?.getLong("sessionId") ?: return@composable
             val messageId = entry.arguments?.getLong("messageId")?.takeIf { it >= 0 }
             SessionDetailRoute(
-                viewModel = screenViewModel { SessionDetailViewModel(container.sessions, sessionId) },
+                viewModel =
+                    screenViewModel {
+                        SessionDetailViewModel(
+                            container.sessions,
+                            sessionId,
+                            container.settings,
+                            container.tutorModels,
+                            container.translator,
+                            container.speaker,
+                        )
+                    },
                 scrollToMessageId = messageId,
+                onOpenSettings = { nav.navigate(Routes.SETTINGS) },
+                onContinue = { nav.navigate(Routes.conversation(sessionId)) },
                 onBack = { nav.popBackStack() },
             )
         }

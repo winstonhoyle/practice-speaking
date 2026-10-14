@@ -11,8 +11,13 @@ enum class Role { USER, ASSISTANT }
  */
 data class Turn(val role: Role, val text: String, val providerPayload: String? = null)
 
-/** The tutor's answer: the text to show, and the raw response to save and replay next turn. */
-data class TutorReply(val text: String, val providerPayload: String?)
+/** Tokens one request used, as the provider reported them. [input] includes [cached]; [output] includes any reasoning. */
+data class TokenUsage(val input: Long = 0, val output: Long = 0, val cached: Long = 0) {
+    operator fun plus(other: TokenUsage) = TokenUsage(input + other.input, output + other.output, cached + other.cached)
+}
+
+/** The tutor's answer: the text to show, the raw response to save and replay next turn, and what it cost in tokens. */
+data class TutorReply(val text: String, val providerPayload: String?, val usage: TokenUsage? = null)
 
 /**
  * A conversation partner backed by one AI provider. Everything outside `ai/` talks to this

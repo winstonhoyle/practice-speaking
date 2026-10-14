@@ -76,7 +76,11 @@ class HistoryViewModelTest {
     @Test
     fun sessionDetailShowsAFailedRead() {
         breakDatabase()
-        val state = SessionDetailViewModel(app.sessions, 1).state.await { it.error != null }
+        val state =
+            SessionDetailViewModel(app.sessions, 1, app.settings, app.tutorModels, app.translator, app.speaker).state.await {
+                it.error !=
+                    null
+            }
         assertTrue(state.error is StorageError.DatabaseFailed)
     }
 }

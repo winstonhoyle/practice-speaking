@@ -14,7 +14,8 @@ data class Summary(val mistakes: String?, val newWords: String?, val tip: String
 /**
  * One parsed tutor reply. [spokenText] is what the bubble shows; [speechText] is the same
  * text without markdown or emoji, for TTS. [rawCorrection] is the correction line as sent when
- * it couldn't be split into parts.
+ * it couldn't be split into parts. [stressed] is the learner's last message with stress marks, from
+ * the `STRESSED:` line (Russian only); check it with [Stress.matchOrNull] before showing it.
  */
 data class ParsedReply(
     val spokenText: String,
@@ -22,6 +23,7 @@ data class ParsedReply(
     val correction: Correction?,
     val rawCorrection: String?,
     val summary: Summary?,
+    val stressed: String? = null,
 )
 
 /**
@@ -31,6 +33,7 @@ data class ParsedReply(
  */
 object TutorResponseParser {
     private val correctionLine = Regex("""^\W*CORRECTION\W*:\s*(.*)$""", RegexOption.IGNORE_CASE)
+    private val stressedLine = Regex("""^\W*STRESSED\W*:\s*(.*)$""", RegexOption.IGNORE_CASE)
     private val summaryHeader = Regex("""^\W*SUMMARY\W*$""", RegexOption.IGNORE_CASE)
     private val summaryField = Regex("""^\W*(Mistakes|New words|Tip)\W*:\s*(.*)$""", RegexOption.IGNORE_CASE)
     private val arrow = Regex("""\s*(→|->|=>)\s*""")
@@ -53,7 +56,19 @@ object TutorResponseParser {
             } else {
                 null
             }
-        val spokenLines = if (correctionIndex >= 0) body.filterIndexed { i, _ -> i != correctionIndex } else body
+        val stressedIndex = body.indexOfLast { stressedLine.matches(it.trim()) }
+        val stressed =
+            if (stressedIndex >= 0) {
+                stressedLine
+                    .find(body[stressedIndex].trim())!!
+                    .groupValues[1]
+                    .let(::cleanMarkdown)
+                    .trim()
+                    .ifBlank { null }
+            } else {
+                null
+            }
+        val spokenLines = body.filterIndexed { i, _ -> i != correctionIndex && i != stressedIndex }
         val spoken = cleanMarkdown(spokenLines.joinToString("\n")).trim()
 
         return ParsedReply(
@@ -62,6 +77,7 @@ object TutorResponseParser {
             correction = rawCorrection?.let(::parseCorrection),
             rawCorrection = rawCorrection,
             summary = summary,
+            stressed = stressed,
         )
     }
 
@@ -100,9 +116,10 @@ object TutorResponseParser {
 
     private fun cleanMarkdown(text: String): String = text.replace(Regex("""\*\*|__|`"""), "")
 
-    /** Removes markdown and emoji so TTS doesn't read symbols aloud. */
+    /** Removes markdown, emoji, and stress marks so TTS reads plain words. */
     fun forSpeech(text: String): String =
-        text
+        Stress
+            .strip(text)
             .let(::cleanMarkdown)
             .replace(Regex("""(?m)^\s*([#>*-]|\d+\.)\s+"""), "")
             .replace(Regex("""[*_~]"""), "")

@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -120,5 +121,46 @@ class ComponentsTest {
         compose.onNodeWithContentDescription("Show key").performClick()
 
         compose.onNodeWithContentDescription("Hide key").assertExists()
+    }
+
+    @Test
+    fun chatMessageActions_hearAndTranslate() {
+        val events = mutableListOf<String>()
+        compose.setContent {
+            PsTheme {
+                ChatMessageItem(
+                    "Я иду́ в магази́не.",
+                    isUser = true,
+                    correction = "в магазине → в магази́н | Accusative.",
+                    onHear = { events += "hear" },
+                    onTranslate = { events += "translate" },
+                    onHearPhrase = { events += "phrase:$it" },
+                )
+            }
+        }
+        compose.onNodeWithContentDescription("Hear it").performClick()
+        compose.onNodeWithContentDescription("Show translation").performClick()
+        compose.onNodeWithContentDescription("Hear the correct form").performClick()
+        assertEquals(listOf("hear", "translate", "phrase:в магази́н"), events)
+    }
+
+    @Test
+    fun chatMessage_showsTheTranslationAndAHideLabel() {
+        compose.setContent { PsTheme { ChatMessageItem("Привет", isUser = false, translation = "Hi", onTranslate = {}) } }
+        compose.onNodeWithText("Hi").assertExists()
+        compose.onNodeWithContentDescription("Hide translation").assertExists()
+    }
+
+    @Test
+    fun chatMessage_whileTranslatingTheButtonWaits() {
+        compose.setContent { PsTheme { ChatMessageItem("Привет", isUser = false, translating = true, onTranslate = {}) } }
+        compose.onNodeWithText("Translating…").assertExists()
+        compose.onNodeWithContentDescription("Show translation").assertIsNotEnabled()
+    }
+
+    @Test
+    fun chatMessage_withoutCallbacksHasNoActions() {
+        compose.setContent { PsTheme { ChatMessageItem("Привет", isUser = false) } }
+        compose.onAllNodesWithContentDescription("Hear it").assertCountEquals(0)
     }
 }

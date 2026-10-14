@@ -20,6 +20,8 @@ class FakeTutorModel(
 
     fun enqueueError(error: TutorError) = script.add(Result.failure(AppException(error)))
 
+    fun enqueueReply(reply: TutorReply) = script.add(Result.success(reply))
+
     override suspend fun reply(systemPrompt: String, history: List<Turn>): Result<TutorReply> {
         requests += history
         return if (script.isEmpty()) Result.success(TutorReply("…", null)) else script.removeAt(0)

@@ -1,12 +1,12 @@
 {
   "formatVersion": 1,
   "database": {
-    "version": 1,
-    "identityHash": "2018261a9ef1c222e5fdbb2bc27772f2",
+    "version": 3,
+    "identityHash": "fa839b676c69e07786da45fd8f28127e",
     "entities": [
       {
         "tableName": "sessions",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `language` TEXT NOT NULL, `provider` TEXT NOT NULL, `model` TEXT NOT NULL, `startedAt` INTEGER NOT NULL, `endedAt` INTEGER, `title` TEXT NOT NULL, `summaryMistakes` TEXT, `summaryNewWords` TEXT, `summaryTip` TEXT)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `language` TEXT NOT NULL, `provider` TEXT NOT NULL, `model` TEXT NOT NULL, `startedAt` INTEGER NOT NULL, `endedAt` INTEGER, `title` TEXT NOT NULL, `summaryMistakes` TEXT, `summaryNewWords` TEXT, `summaryTip` TEXT, `level` TEXT)",
         "fields": [
           {
             "fieldPath": "id",
@@ -63,6 +63,11 @@
             "fieldPath": "summaryTip",
             "columnName": "summaryTip",
             "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "level",
+            "columnName": "level",
+            "affinity": "TEXT"
           }
         ],
         "primaryKey": {
@@ -74,7 +79,7 @@
       },
       {
         "tableName": "messages",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `sessionId` INTEGER NOT NULL, `role` TEXT NOT NULL, `text` TEXT NOT NULL, `correction` TEXT, `providerPayload` TEXT, `createdAt` INTEGER NOT NULL, FOREIGN KEY(`sessionId`) REFERENCES `sessions`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `sessionId` INTEGER NOT NULL, `role` TEXT NOT NULL, `text` TEXT NOT NULL, `correction` TEXT, `providerPayload` TEXT, `createdAt` INTEGER NOT NULL, `stressed` TEXT, `translation` TEXT, FOREIGN KEY(`sessionId`) REFERENCES `sessions`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "id",
@@ -115,6 +120,16 @@
             "columnName": "createdAt",
             "affinity": "INTEGER",
             "notNull": true
+          },
+          {
+            "fieldPath": "stressed",
+            "columnName": "stressed",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "translation",
+            "columnName": "translation",
+            "affinity": "TEXT"
           }
         ],
         "primaryKey": {
@@ -189,7 +204,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '2018261a9ef1c222e5fdbb2bc27772f2')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'fa839b676c69e07786da45fd8f28127e')"
     ]
   }
 }

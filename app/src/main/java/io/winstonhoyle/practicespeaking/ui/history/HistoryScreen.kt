@@ -23,6 +23,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.winstonhoyle.practicespeaking.R
 import io.winstonhoyle.practicespeaking.ai.Provider
 import io.winstonhoyle.practicespeaking.data.db.SessionRow
+import io.winstonhoyle.practicespeaking.enumByName
 import io.winstonhoyle.practicespeaking.prompt.TutorLanguage
 import io.winstonhoyle.practicespeaking.prompt.TutorResponseParser
 import io.winstonhoyle.practicespeaking.ui.AppErrorBanner
@@ -185,9 +186,9 @@ private fun SearchResults(state: HistoryUiState, onOpenSession: (Long, Long?) ->
 /** A stored correction as one readable line; an unparseable one shows as stored. */
 private fun correctionLine(raw: String): String = TutorResponseParser.parseCorrection(raw)?.display() ?: raw
 
-internal fun languageOf(name: String): TutorLanguage = TutorLanguage.entries.firstOrNull { it.name == name } ?: TutorLanguage.RUSSIAN
+internal fun languageOf(name: String): TutorLanguage = enumByName<TutorLanguage>(name) ?: TutorLanguage.RUSSIAN
 
 /** The [Provider] a saved session names, or null for one this build doesn't know. */
-internal fun providerOf(name: String): Provider? = Provider.entries.firstOrNull { it.name == name }
+internal fun providerOf(name: String): Provider? = enumByName<Provider>(name)
 
 internal fun providerLabel(name: String): String = providerOf(name)?.shortName ?: name

@@ -27,8 +27,9 @@ fun findOccurrences(text: String, query: String): List<TextRange> {
 }
 
 /**
- * Where [phrase] appears in [text], ignoring case, punctuation, and extra spaces. Speech-to-text
- * and the tutor rarely punctuate a phrase the same way. Null when it isn't there.
+ * Where [phrase] appears in [text], ignoring case, punctuation, extra spaces, and stress marks.
+ * Speech-to-text and the tutor rarely punctuate a phrase the same way, and only one of them may
+ * mark stress. Null when it isn't there.
  */
 fun findPhrase(text: String, phrase: String): TextRange? {
     val (haystack, positions) = normalize(text)
@@ -38,18 +39,29 @@ fun findPhrase(text: String, phrase: String): TextRange? {
     while (start >= 0) {
         val end = start + needle.length
         val wholeWords = (start == 0 || haystack[start - 1] == ' ') && (end == haystack.length || haystack[end] == ' ')
-        if (wholeWords) return TextRange(positions[start], positions[end - 1] + 1)
+        if (wholeWords) return TextRange(positions[start], afterMarks(text, positions[end - 1] + 1))
         start = haystack.indexOf(needle, start + 1)
     }
     return null
 }
 
-/** Lowercase letters and digits with single spaces between words, plus each char's index in [text]. */
+/** Moves [index] past any combining marks, so a stress mark on the last letter stays inside the range. */
+private fun afterMarks(text: String, index: Int): Int {
+    var i = index
+    while (i < text.length && isMark(text[i])) i++
+    return i
+}
+
+private fun isMark(c: Char) = Character.getType(c) == Character.NON_SPACING_MARK.toInt()
+
+/** Lowercase letters and digits with single spaces between words, plus each char's index in [text]. Marks are dropped. */
 private fun normalize(text: String): Pair<String, List<Int>> {
     val out = StringBuilder()
     val positions = mutableListOf<Int>()
     text.forEachIndexed { i, c ->
-        if (c.isLetterOrDigit()) {
+        if (isMark(c)) {
+            return@forEachIndexed
+        } else if (c.isLetterOrDigit()) {
             out.append(c.lowercaseChar())
             positions += i
         } else if (out.isNotEmpty() && out.last() != ' ') {

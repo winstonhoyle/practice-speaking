@@ -3,18 +3,23 @@ package io.winstonhoyle.practicespeaking.prompt
 import android.content.Context
 
 /**
- * Fills the tutor prompt template for one language. The output depends only on the language
- * (no dates or IDs), so it is byte-identical every time and prompt caching works.
+ * Fills the tutor prompt template for one language and level. The output depends only on those
+ * two (no dates or IDs), so it is byte-identical every time and prompt caching works.
  */
 class PromptRenderer(private val template: String) {
-    fun render(language: TutorLanguage): String {
+    fun render(language: TutorLanguage, level: CefrLevel = CefrLevel.DEFAULT): String {
         val values =
             mapOf(
                 "TUTOR_NAME" to language.tutorName,
                 "LANGUAGE_NAME" to language.displayName,
+                "LEVEL" to level.name,
+                "LEVEL_NAME" to level.label,
+                "LEVEL_RULE" to level.promptRule,
+                "VARIANT_RULE" to language.variantRule,
                 "INFORMAL_RULE" to language.informalRule,
                 "GRAMMAR_PRIORITIES" to language.grammarPriorities,
-                "EXTRA_RULES" to language.extraRules,
+                "EXTRA_RULES" to if (level.usesSimplifications) " " + language.extraRules else "",
+                "STRESS_RULES" to language.stressRules,
                 "EXAMPLE_CONNECTORS" to language.connectors,
                 "EXAMPLE_QUESTIONS" to language.exampleQuestions,
                 "NUMBER_EXAMPLE" to language.numberExample,
@@ -31,6 +36,14 @@ class PromptRenderer(private val template: String) {
             }
         return rendered
     }
+
+    /**
+     * The prompt for translating one message into English. It is separate from the tutor prompt
+     * and never part of the conversation, so asking for a translation doesn't change the session.
+     */
+    fun translationPrompt(language: TutorLanguage): String =
+        "Translate the ${language.displayName} text the user sends into natural English. " +
+            "Reply with the translation only: no notes, quotes, or formatting. Keep names as they are."
 
     companion object {
         private val PLACEHOLDER = Regex("""\{\{([A-Z_]+)\}\}""")

@@ -16,7 +16,7 @@ It supports Russian, French, Portuguese (Brazil), German, and Spanish (Mexico). 
 4. Get an API key from [Anthropic](https://platform.claude.com/settings/keys), [OpenAI](https://platform.openai.com/api-keys), or [Google AI Studio](https://aistudio.google.com/apikey). The app has no built-in key, and the provider bills your account for what you use.
 5. Open Practice Speaking, paste the key, tap Test key, pick a language, and start talking.
 
-New versions install over the old one and keep your sessions.
+A new version installs over the old one. If it changes the database, History starts empty.
 
 ![A conversation with a correction, the end-of-session summary, History, search, a saved session, and Settings, in the light theme](docs/images/screens-light.png)
 
@@ -30,10 +30,15 @@ New versions install over the old one and keep your sessions.
 ## What it does
 
 - Speech in and speech out use Android's built-in `SpeechRecognizer` and `TextToSpeech`, in the language you're practising. A text box covers the times you can't talk.
-- Each language has its own tutor: Masha (Russian), Camille (French), Ana (Portuguese), Lena (German), and Lucía (Spanish). They share one prompt template, with grammar priorities set per language.
+- Each language has its own tutor: Kristina (Russian), Camille (French), Ana (Portuguese), Hans (German), and Lucía (Spanish). They share one prompt template, with grammar priorities set per language.
 - Corrections appear under your message (~~в магазине~~ → **в магазин**) and are never read aloud.
-- Slower, Harder, and Translate buttons adjust the tutor mid-conversation. End session gives you a summary of your mistakes, new words, and one thing to practise next.
-- History lists past sessions, and full-text search covers every message and correction ("магазин" also finds "магазине").
+- Hold the mic as long as you like. Pauses to think don't cut you off; what you said is sent when you let go.
+- Pick your level from A1 to C2, and the tutor pitches its words and grammar to it.
+- Every message has a hear-it button, your own sentences included, so you can compare your pronunciation, and a translate button that shows the English under it. The correction card reads the correct form aloud too.
+- In Russian, the tutor marks word stress (приве́т) in its replies and in your sentences. The voice and search use the plain words.
+- Slower, Harder, and Translate buttons adjust the tutor mid-conversation; Slower also slows the voice, and Settings has a voice speed. End session gives you a summary of your mistakes, new words, and one thing to practise next.
+- History lists past sessions, and full-text search covers every message and correction ("магазин" also finds "магазине"). Open a session to read it, translate it, or continue it where you left off.
+- Settings shows how many tokens you've used with each provider. The total keeps counting when you delete sessions.
 
 ## Your API key stays on your phone
 
@@ -54,19 +59,19 @@ flowchart LR
     VM --> Speech["SpeechRecognizer<br/>TextToSpeech"]
 ```
 
-Only the `ai/` package knows which vendors exist. The ViewModels, the database, the prompt, and the response parser all work with the `TutorModel` interface and plain strings.
+Only the `ai/` package knows which vendors exist. The ViewModels, the database, the prompt, and the response parser all work with the `TutorModel` interface and plain strings. `AppContainer` wraps every model in `CountingTutorModel`, which adds each reply's tokens to the totals in Settings.
 
 Three rules keep requests cheap and correct:
 
 - History is append-only. Each tutor reply is saved with the provider's raw response and replayed exactly on the next turn, including reasoning blocks and their signatures. Nothing gets trimmed or rewritten, so prompt caching keeps working. After 60 turns the app suggests starting a fresh session instead.
-- The system prompt is byte-identical for a given language (no dates, no IDs), so every provider can cache it.
+- The system prompt is byte-identical for a given language and level (no dates, no IDs), so every provider can cache it.
 - Models drift from the output format, so the parser accepts `->` as well as `→`, stray markdown, and summaries written as lists. If a block is malformed, the app shows the text as it came.
 
 ### Add a provider
 
 1. Add an entry to `Provider` in `ai/Provider.kt`: display name, badge name, default model, key hint, the page where people create a key, and a one-color logo drawable. Settings, the badges, and the key link read from it.
-2. Write a `TutorModel` class in `ai/`. Wrap each call in `providerCall` (from `ProviderSupport.kt`) so its exceptions become `TutorError`s, return the reply text with the raw response as `providerPayload`, and replay that payload on the next turn. Add its branch to `TutorModelFactory`. `listModels()` reads the provider's model list for the Settings picker.
-3. Subclass `TutorModelContractTest` with the provider's mock responses: a reply, a refusal, an error, a context-length error, the key check, and a model list. The shared suite checks error mapping, refusals, history replay, `testKey()`, and `listModels()` against MockWebServer.
+2. Write a `TutorModel` class in `ai/`. Wrap each call in `providerCall` (from `ProviderSupport.kt`) so its exceptions become `TutorError`s, return the reply text with the raw response as `providerPayload` and the token counts as `usage`, and replay that payload on the next turn. Add its branch to `TutorModelFactory`. `listModels()` reads the provider's model list for the Settings picker.
+3. Subclass `TutorModelContractTest` with the provider's mock responses: a reply, a refusal, an error, a context-length error, the key check, and a model list. The shared suite checks error mapping, refusals, history replay, token usage, `testKey()`, and `listModels()` against MockWebServer.
 
 Nothing outside `ai/` changes.
 
@@ -118,7 +123,7 @@ You need JDK 21 and the Android SDK (platform 36, build-tools 36.0.0).
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
-Or open the folder in Android Studio and press Run. On first launch the app opens Settings: pick a provider, paste a key, tap **Test key**, and choose a language. Key pages: [Anthropic](https://platform.claude.com/settings/keys), [OpenAI](https://platform.openai.com/api-keys), [Google AI Studio](https://aistudio.google.com/apikey).
+Or open the folder in Android Studio and press Run. The app opens on Settings until it has a key.
 
 On an emulator, use a Google Play system image so speech recognition and Google TTS are available. To talk to the app, turn on host audio input under Extended controls → Microphone, and install TTS voice data for the languages you'll practise.
 
@@ -130,7 +135,7 @@ On an emulator, use a Google Play system image so speech recognition and Google 
 ./gradlew spotlessCheck detekt lint testDebugUnitTest assembleDebug   # what CI runs
 ```
 
-The offline suite covers the response parser, the prompt renderer (the Russian render must match the original prompt byte for byte), Room and full-text search, settings storage, the error table, the Conversation, Settings, and History ViewModels with a scripted fake tutor, and database failures on the read-only screens. Every provider runs the same `TutorModelContractTest` against MockWebServer: error mapping, refusals, context-length errors, history replay, the key check, and the model list.
+The offline suite covers the parser, the prompt (the Russian prompt against a byte-for-byte snapshot), Room and search, settings, the error table, every ViewModel with a scripted fake tutor, hold-to-talk on Robolectric's speech recognizer, and the components. Every provider runs the same `TutorModelContractTest` against MockWebServer.
 
 Live tests make real API calls, so they only run when asked. Put a key in a `.env` file at the repo root (it's gitignored) and pass `-Plive`:
 
@@ -174,7 +179,7 @@ gh secret set RELEASE_KEY_PASSWORD -R $R       # the same password
 Then release:
 
 ```sh
-git tag v0.1.0 && git push origin v0.1.0
+git tag v1.0.0 && git push origin v1.0.0
 ```
 
 To build a signed copy on your own machine instead, create a gitignored `keystore.properties` at the repo root:

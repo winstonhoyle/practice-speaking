@@ -59,7 +59,15 @@ class AnthropicTutorModel internal constructor(
 
             val response = client.messages().create(params)
             val usage = response.usage()
-            logUsage(provider, usage.inputTokens(), usage.outputTokens(), usage.cacheReadInputTokens().orElse(0L))
+            // Anthropic counts cache reads and writes apart from input_tokens; the total input is all three.
+            val cacheRead = usage.cacheReadInputTokens().orElse(0L)
+            val tokens =
+                usageOf(
+                    provider,
+                    usage.inputTokens() + cacheRead + usage.cacheCreationInputTokens().orElse(0L),
+                    usage.outputTokens(),
+                    cacheRead,
+                )
 
             when (response.stopReason().orElse(null)) {
                 StopReason.REFUSAL -> throw AppException(TutorError.Refused)
@@ -68,7 +76,7 @@ class AnthropicTutorModel internal constructor(
             }
             val text = response.content().mapNotNull { it.text().orElse(null)?.text() }.joinToString("")
             val payload = json.write(response.content().map { it.toParam() })
-            TutorReply(text, payload)
+            TutorReply(text, payload, tokens)
         }
 
     override suspend fun testKey(): Result<Unit> = call { client.models().retrieve(model) }

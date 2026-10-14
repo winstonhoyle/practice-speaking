@@ -9,6 +9,11 @@
     <string name="cd_clear_search">Clear search</string>
     <string name="cd_thinking">Tutor is thinking</string>
     <string name="cd_correction">Correction</string>
+    <string name="cd_hear_it">Hear it</string>
+    <string name="cd_hear_correction">Hear the correct form</string>
+    <string name="cd_translate">Show translation</string>
+    <string name="cd_hide_translation">Hide translation</string>
+    <string name="translating">Translating…</string>
     <string name="mic_idle">Hold to talk</string>
     <string name="mic_listening">Listening…</string>
     <string name="mic_thinking">Thinking…</string>
@@ -38,6 +43,12 @@
     <string name="settings_model_hint">Leave blank to use %1$s.</string>
     <string name="settings_language">Language to practise</string>
     <string name="settings_start">Start talking</string>
+    <string name="settings_usage">Tokens used with %1$s so far: %2$s in (%3$s of them cached), %4$s out. Deleting sessions doesn\'t change this.</string>
+    <string name="settings_level">Your level</string>
+    <string name="settings_voice_speed">Voice speed</string>
+    <string name="voice_speed_slow">Slow</string>
+    <string name="voice_speed_relaxed">Relaxed</string>
+    <string name="voice_speed_normal">Normal</string>
     <string name="settings_theme">Appearance</string>
     <string name="theme_system">Match phone</string>
     <string name="theme_light">Light</string>
@@ -81,6 +92,7 @@
     <string name="history_delete_title">Delete this session?</string>
     <string name="history_delete_body">This removes \"%1$s\" and all its messages.</string>
     <string name="search_no_results">Nothing matches \"%1$s\".</string>
+    <string name="session_continue">Continue this conversation</string>
     <string name="session_missing">This session no longer exists.</string>
     <plurals name="message_count">
         <item quantity="one">%d message</item>

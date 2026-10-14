@@ -28,4 +28,5 @@ object PsIcons {
     val Success: ImageVector @Composable get() = ImageVector.vectorResource(R.drawable.ic_check_circle)
     val Failure: ImageVector @Composable get() = ImageVector.vectorResource(R.drawable.ic_cancel)
     val Info: ImageVector @Composable get() = ImageVector.vectorResource(R.drawable.ic_info)
+    val Translate: ImageVector @Composable get() = ImageVector.vectorResource(R.drawable.ic_translate)
 }

@@ -46,9 +46,17 @@ class OpenAiTutorModel internal constructor(override val model: String, private 
                     reasoning = false
                     client.responses().create(params(systemPrompt, input))
                 }
-            response.usage().ifPresent {
-                logUsage(provider, it.inputTokens(), it.outputTokens(), it.inputTokensDetails().cachedTokens())
-            }
+            val tokens =
+                response
+                    .usage()
+                    .map {
+                        usageOf(
+                            provider,
+                            it.inputTokens(),
+                            it.outputTokens(),
+                            it.inputTokensDetails().cachedTokens(),
+                        )
+                    }.orElse(null)
             if (isRefusal(response)) throw AppException(TutorError.Refused)
 
             val text =
@@ -58,7 +66,7 @@ class OpenAiTutorModel internal constructor(override val model: String, private 
                     .flatMap { it.asMessage().content() }
                     .filter { it.isOutputText() }
                     .joinToString("") { it.asOutputText().text() }
-            TutorReply(text, json.write(response.output()))
+            TutorReply(text, json.write(response.output()), tokens)
         }
 
     override suspend fun testKey(): Result<Unit> = call { client.models().retrieve(model) }

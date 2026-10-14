@@ -30,4 +30,12 @@ class TextHighlightTest {
         assertEquals(6, result.spanStyles.single().start)
         assertEquals(16, result.spanStyles.single().end)
     }
+
+    @Test
+    fun findPhrase_ignoresStressMarksOnEitherSide() {
+        val text = "Я иду́ в магази́не."
+        val range = findPhrase(text, "в магазине")!!
+        assertEquals("в магази́не", text.substring(range.min, range.max))
+        assertEquals(TextRange(6, 16), findPhrase("Я иду в магазине.", "в магази́не"))
+    }
 }

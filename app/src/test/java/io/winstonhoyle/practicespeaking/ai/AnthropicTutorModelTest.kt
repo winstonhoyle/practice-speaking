@@ -128,6 +128,16 @@ class AnthropicTutorModelTest : TutorModelContractTest() {
     }
 
     @Test
+    fun usageCountsCacheReadsAndWritesAsInput() {
+        enqueue(
+            """{"id":"m","type":"message","role":"assistant","model":"claude-test","content":[{"type":"text","text":"Да"}],
+             "stop_reason":"end_turn","stop_sequence":null,
+             "usage":{"input_tokens":10,"output_tokens":5,"cache_read_input_tokens":90,"cache_creation_input_tokens":4}}""",
+        )
+        assertEquals(TokenUsage(input = 104, output = 5, cached = 90), replyTo(model(), Turn(Role.USER, "x")).getOrThrow().usage)
+    }
+
+    @Test
     fun contextWindowStopReason_mapsToContextTooLong() {
         enqueue(message("[]", stopReason = "model_context_window_exceeded"))
         assertEquals(TutorError.ContextTooLong, replyTo(model(), Turn(Role.USER, "x")).appError())

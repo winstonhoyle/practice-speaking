@@ -2,9 +2,11 @@ package io.winstonhoyle.practicespeaking
 
 import android.content.Context
 import androidx.datastore.preferences.preferencesDataStore
+import io.winstonhoyle.practicespeaking.ai.CountingTutorModel
 import io.winstonhoyle.practicespeaking.ai.Provider
 import io.winstonhoyle.practicespeaking.ai.TutorModel
 import io.winstonhoyle.practicespeaking.ai.TutorModelFactory
+import io.winstonhoyle.practicespeaking.data.MessageTranslator
 import io.winstonhoyle.practicespeaking.data.db.AppDatabase
 import io.winstonhoyle.practicespeaking.data.db.SessionRepository
 import io.winstonhoyle.practicespeaking.data.settings.KeyStoreCipher
@@ -26,5 +28,10 @@ class AppContainer(context: Context) {
     val sessions = SessionRepository(AppDatabase.create(app).sessionDao())
     val prompts: PromptRenderer by lazy { PromptRenderer.fromAssets(app) }
     val speaker: Speaker by lazy { SpeechOutput(app) }
-    val tutorModels: TutorModelBuilder = TutorModelFactory::create
+
+    /** Every model the app builds counts its tokens into [SettingsRepository.usage]. */
+    val tutorModels: TutorModelBuilder = { provider, key, model ->
+        CountingTutorModel(TutorModelFactory.create(provider, key, model), settings::addUsage)
+    }
+    val translator: MessageTranslator by lazy { MessageTranslator(sessions, prompts) }
 }

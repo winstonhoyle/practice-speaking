@@ -43,12 +43,13 @@ class GeminiTutorModel internal constructor(
                 )
 
             val usage = json.path("usageMetadata")
-            logUsage(
-                provider,
-                usage.path("promptTokenCount").asLong(),
-                usage.path("candidatesTokenCount").asLong(),
-                usage.path("cachedContentTokenCount").asLong(),
-            )
+            val tokens =
+                usageOf(
+                    provider,
+                    usage.path("promptTokenCount").asLong(),
+                    usage.path("candidatesTokenCount").asLong() + usage.path("thoughtsTokenCount").asLong(),
+                    usage.path("cachedContentTokenCount").asLong(),
+                )
             if (json.path("promptFeedback").has("blockReason")) throw AppException(TutorError.Refused)
             val candidate = json.path("candidates").path(0)
             if (candidate.path("finishReason").asText() in BLOCKED) throw AppException(TutorError.Refused)
@@ -59,7 +60,7 @@ class GeminiTutorModel internal constructor(
                     .path("parts")
                     .filter { !it.path("thought").asBoolean(false) && it.has("text") }
                     .joinToString("") { it.path("text").asText() }
-            TutorReply(text, mapper.writeValueAsString(content))
+            TutorReply(text, mapper.writeValueAsString(content), tokens)
         }
 
     override suspend fun testKey(): Result<Unit> =

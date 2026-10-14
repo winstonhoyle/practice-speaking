@@ -71,6 +71,13 @@ abstract class TutorModelContractTest {
     }
 
     @Test
+    fun reply_reportsItsTokenUsage() {
+        // Every provider's mock reply reports 10 input and 5 output tokens, none cached.
+        enqueue(replyBody("Привет!"))
+        assertEquals(TokenUsage(input = 10, output = 5, cached = 0), replyTo(model(), Turn(Role.USER, "Привет")).getOrThrow().usage)
+    }
+
+    @Test
     fun theSavedPayloadIsReplayedNextTurn() {
         enqueue(replyBody("Привет!"))
         enqueue(replyBody("Хорошо."))

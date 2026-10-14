@@ -104,12 +104,12 @@ internal fun ListRow(onClick: () -> Unit, modifier: Modifier = Modifier, content
 
 /** Small muted text: dates, counts, hints. */
 @Composable
-internal fun SecondaryText(text: String, modifier: Modifier = Modifier) {
+internal fun SecondaryText(text: String, modifier: Modifier = Modifier, maxLines: Int = 1) {
     Text(
         text,
         style = PsTheme.typography.bodySmall,
         color = PsTheme.colors.onSurfaceVariant,
-        maxLines = 1,
+        maxLines = maxLines,
         overflow = TextOverflow.Ellipsis,
         modifier = modifier,
     )

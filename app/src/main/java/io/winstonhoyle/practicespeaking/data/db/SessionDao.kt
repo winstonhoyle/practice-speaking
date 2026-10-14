@@ -5,6 +5,8 @@ import androidx.room.Insert
 import androidx.room.Query
 import kotlinx.coroutines.flow.Flow
 
+// One query per method is how Room DAOs are written; splitting it would only scatter the SQL.
+@Suppress("TooManyFunctions")
 @Dao
 interface SessionDao {
     @Insert
@@ -18,6 +20,12 @@ interface SessionDao {
 
     @Query("UPDATE messages SET correction = :correction WHERE id = :messageId")
     suspend fun setCorrection(messageId: Long, correction: String)
+
+    @Query("UPDATE messages SET stressed = :stressed WHERE id = :messageId")
+    suspend fun setStressed(messageId: Long, stressed: String)
+
+    @Query("UPDATE messages SET translation = :translation WHERE id = :messageId")
+    suspend fun setTranslation(messageId: Long, translation: String)
 
     @Query(
         """UPDATE sessions SET endedAt = :endedAt, summaryMistakes = :mistakes, summaryNewWords = :newWords,

@@ -5,6 +5,7 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import io.winstonhoyle.practicespeaking.ai.FakeTutorModel
 import io.winstonhoyle.practicespeaking.data.FakeCipher
+import io.winstonhoyle.practicespeaking.data.MessageTranslator
 import io.winstonhoyle.practicespeaking.data.db.AppDatabase
 import io.winstonhoyle.practicespeaking.data.db.SessionRepository
 import io.winstonhoyle.practicespeaking.data.settings.SettingsRepository
@@ -30,10 +31,15 @@ class FakeSpeaker : Speaker {
     override val voiceStatus = MutableStateFlow(VoiceStatus.Ready)
     val spoken = mutableListOf<String>()
     var localeTag: String? = null
+    var currentRate = 1.0f
     var stops = 0
 
     override fun setLanguage(localeTag: String) {
         this.localeTag = localeTag
+    }
+
+    override fun setRate(rate: Float) {
+        currentRate = rate
     }
 
     override fun speak(text: String) {
@@ -58,6 +64,7 @@ class TestApp {
     val sessions = SessionRepository(db.sessionDao())
     val prompts = PromptRenderer("You are {{TUTOR_NAME}}, a {{LANGUAGE_NAME}} tutor.")
     val speaker = FakeSpeaker()
+    val translator = MessageTranslator(sessions, prompts)
     val tutor = FakeTutorModel()
     val builtModels = mutableListOf<Triple<String, String, String>>()
     val tutorModels: TutorModelBuilder = { provider, key, model ->

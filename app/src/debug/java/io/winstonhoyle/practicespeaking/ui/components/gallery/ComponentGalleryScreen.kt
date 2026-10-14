@@ -95,11 +95,11 @@ fun GalleryContent(modifier: Modifier = Modifier) {
     Column(verticalArrangement = Arrangement.spacedBy(PsTheme.spacing.lg), modifier = modifier) {
         Section("MessageBubble") {
             MessageBubble("Я иду в магазине за хлебом.", isUser = true, highlights = listOf(TextRange(6, 17)))
-            MessageBubble("Привет! Как прошёл твой день?", isUser = false, onReplay = {})
+            MessageBubble("Приве́т! Как прошёл твой день?", isUser = false, translation = "Hi! How was your day?")
             MessageBubble("Хорошо, спасибо.", isUser = true)
         }
         Section("CorrectionCard") {
-            CorrectionCard("в магазине", "в магазин", "Motion toward a place takes the accusative.")
+            CorrectionCard("в магазине", "в магази́н", "Motion toward a place takes the accusative.", onHearRight = {})
             CorrectionCard("je suis allé", "je suis allée", null)
         }
         Section("ThinkingIndicator") { ThinkingIndicator() }

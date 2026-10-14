@@ -111,6 +111,7 @@ fun ConversationRoute(viewModel: ConversationViewModel, onOpenSettings: () -> Un
         onSend = viewModel::send,
         onCommand = viewModel::onCommand,
         onReplay = viewModel::replay,
+        onTranslate = viewModel::toggleTranslation,
         onErrorAction = { action ->
             when (action) {
                 ErrorAction.OpenSettings -> {
@@ -156,6 +157,7 @@ fun ConversationScreen(
     onSend: (String) -> Unit,
     onCommand: (TutorCommand) -> Unit,
     onReplay: (String) -> Unit,
+    onTranslate: (Long) -> Unit,
     onErrorAction: (ErrorAction) -> Unit,
     onEndSession: () -> Unit,
     onOpenSettings: () -> Unit,
@@ -201,7 +203,7 @@ fun ConversationScreen(
                 }
 
                 else -> {
-                    Transcript(state, onReplay, Modifier.weight(1f))
+                    Transcript(state, onReplay, onTranslate, Modifier.weight(1f))
                 }
             }
             Banners(state, onErrorAction, onEndSession)
@@ -221,7 +223,7 @@ fun ConversationScreen(
 }
 
 @Composable
-private fun Transcript(state: ConversationUiState, onReplay: (String) -> Unit, modifier: Modifier = Modifier) {
+private fun Transcript(state: ConversationUiState, onReplay: (String) -> Unit, onTranslate: (Long) -> Unit, modifier: Modifier = Modifier) {
     if (state.messages.isEmpty() && !state.isListening) {
         EmptyState(
             icon = PsIcons.Mic,
@@ -244,7 +246,11 @@ private fun Transcript(state: ConversationUiState, onReplay: (String) -> Unit, m
                 text = message.text,
                 isUser = message.isUser,
                 correction = message.correction,
-                onReplay = if (message.isUser) null else ({ onReplay(message.text) }),
+                translation = state.translations.visible(message.id),
+                translating = message.id in state.translations.loading,
+                onHear = { onReplay(message.text) },
+                onTranslate = { onTranslate(message.id) },
+                onHearPhrase = onReplay,
                 modifier = Modifier.animateItem(),
             )
         }

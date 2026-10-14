@@ -20,6 +20,7 @@ class SpeechOutput(context: Context) : Speaker {
 
     private var ready = false
     private var localeTag: String? = null
+    private var rate = 1.0f
     private var utteranceId = 0
 
     private val tts: TextToSpeech =
@@ -27,6 +28,7 @@ class SpeechOutput(context: Context) : Speaker {
             if (status == TextToSpeech.SUCCESS) {
                 ready = true
                 localeTag?.let(::applyLanguage)
+                tts.setSpeechRate(rate)
             } else {
                 _voiceStatus.value = VoiceStatus.Unavailable
             }
@@ -56,6 +58,11 @@ class SpeechOutput(context: Context) : Speaker {
     override fun setLanguage(localeTag: String) {
         this.localeTag = localeTag
         if (ready) applyLanguage(localeTag)
+    }
+
+    override fun setRate(rate: Float) {
+        this.rate = rate
+        if (ready) tts.setSpeechRate(rate)
     }
 
     private fun applyLanguage(tag: String) {

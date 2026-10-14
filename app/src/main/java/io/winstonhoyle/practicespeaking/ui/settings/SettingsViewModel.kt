@@ -4,11 +4,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.winstonhoyle.practicespeaking.TutorModelBuilder
 import io.winstonhoyle.practicespeaking.ai.Provider
+import io.winstonhoyle.practicespeaking.ai.TokenUsage
 import io.winstonhoyle.practicespeaking.data.settings.SettingsRepository
 import io.winstonhoyle.practicespeaking.data.settings.ThemeMode
+import io.winstonhoyle.practicespeaking.data.settings.VoiceSpeed
 import io.winstonhoyle.practicespeaking.error.AppError
 import io.winstonhoyle.practicespeaking.error.StorageError
 import io.winstonhoyle.practicespeaking.error.appError
+import io.winstonhoyle.practicespeaking.prompt.CefrLevel
 import io.winstonhoyle.practicespeaking.prompt.TutorLanguage
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -31,12 +34,16 @@ data class SettingsUiState(
     val loading: Boolean = true,
     val provider: Provider = Provider.ANTHROPIC,
     val language: TutorLanguage = TutorLanguage.RUSSIAN,
+    val level: CefrLevel = CefrLevel.DEFAULT,
+    val voiceSpeed: VoiceSpeed = VoiceSpeed.DEFAULT,
     val apiKey: String = "",
     val model: String = Provider.ANTHROPIC.defaultModel,
     val keyCheck: KeyCheck = KeyCheck.NotChecked,
     /** The models this key can use, filled in after a passing key check. Empty means a free-text field. */
     val models: List<String> = emptyList(),
     val themeMode: ThemeMode = ThemeMode.System,
+    /** All tokens used with [provider] so far. */
+    val usage: TokenUsage = TokenUsage(),
 ) {
     val canStart: Boolean get() = apiKey.isNotBlank()
 }
@@ -55,7 +62,13 @@ class SettingsViewModel(private val settings: SettingsRepository, private val tu
         viewModelScope.launch {
             val provider = settings.provider.first()
             _state.value =
-                loadProvider(provider).copy(language = settings.language.first(), themeMode = settings.themeMode.first(), loading = false)
+                loadProvider(provider).copy(
+                    language = settings.language.first(),
+                    level = settings.level.first(),
+                    voiceSpeed = settings.voiceSpeed.first(),
+                    themeMode = settings.themeMode.first(),
+                    loading = false,
+                )
         }
     }
 
@@ -65,13 +78,29 @@ class SettingsViewModel(private val settings: SettingsRepository, private val tu
         viewModelScope.launch {
             settings.setProvider(provider)
             _state.value =
-                loadProvider(provider).copy(language = _state.value.language, themeMode = _state.value.themeMode, loading = false)
+                loadProvider(provider).copy(
+                    language = _state.value.language,
+                    level = _state.value.level,
+                    voiceSpeed = _state.value.voiceSpeed,
+                    themeMode = _state.value.themeMode,
+                    loading = false,
+                )
         }
     }
 
     fun selectLanguage(language: TutorLanguage) {
         _state.update { it.copy(language = language) }
         viewModelScope.launch { settings.setLanguage(language) }
+    }
+
+    fun selectLevel(level: CefrLevel) {
+        _state.update { it.copy(level = level) }
+        viewModelScope.launch { settings.setLevel(level) }
+    }
+
+    fun selectVoiceSpeed(speed: VoiceSpeed) {
+        _state.update { it.copy(voiceSpeed = speed) }
+        viewModelScope.launch { settings.setVoiceSpeed(speed) }
     }
 
     fun selectThemeMode(mode: ThemeMode) {
@@ -122,6 +151,7 @@ class SettingsViewModel(private val settings: SettingsRepository, private val tu
             provider = provider,
             apiKey = settings.apiKey(provider).first().orEmpty(),
             model = settings.model(provider).first(),
+            usage = settings.usage(provider).first(),
             keyCheck = if (settings.keyUnreadable(provider).first()) KeyCheck.Invalid(StorageError.KeyUnreadable) else KeyCheck.NotChecked,
         )
 }

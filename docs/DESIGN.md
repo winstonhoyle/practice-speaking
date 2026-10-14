@@ -105,8 +105,9 @@ Each component is stateless (state in, events out), takes `modifier: Modifier = 
 | Component | Purpose |
 |---|---|
 | `PsTopBar` | Title, optional back button, optional actions |
-| `MessageBubble` | User or tutor message; `highlights` underline mistakes; optional replay button |
-| `CorrectionCard` | ~~wrong~~ → **right** + short explanation |
+| `MessageBubble` | User or tutor message; `highlights` underline mistakes; an optional translation shows inside, a step quieter |
+| `ChatMessageItem` | One transcript message: the bubble, its correction card, and the hear-it and translate actions under it |
+| `CorrectionCard` | ~~wrong~~ → **right** + short explanation, with an optional button that reads the correct form |
 | `MicButton` | Hold-to-talk; `Idle / Listening / Thinking / Speaking / Disabled`; pulse; haptics |
 | `ThinkingIndicator` | Three animated dots in a tutor bubble |
 | `CommandChipRow` | Slower · Harder · Translate · End session |
@@ -114,6 +115,7 @@ Each component is stateless (state in, events out), takes `modifier: Modifier = 
 | `LanguageBadge` | Flag and language code, outlined in the language's accent color |
 | `ProviderBadge` | Which AI provider a session used: logo and name, or the name alone |
 | `FlagImage` / `ProviderLogo` | The flag or logo by itself, for pickers |
+| `PsIconAction` | Icon-only button; `subtle` draws a small icon in the secondary color for actions beside content (48dp target either way) |
 | `PsDropdown<T>` | Generic picker for provider, language, …, with an optional icon per option |
 | `PsTextField` | One-line field; with `suggestions` it also offers a filtered menu (the model list) |
 | `SecretTextField` | Masked API-key field with show/hide |
@@ -133,7 +135,7 @@ Components are built from a few internal primitives, so each layout decision is 
 | `PsCard` | `CorrectionCard`, summary tip, `ErrorBanner` |
 | `ListRow` + `MetaRow` + `SecondaryText` | `SessionListItem`, `SearchResultItem` |
 
-When two components start to share a layout, move it into a primitive instead of copying it.
+When two components start to share a layout, move it into a primitive instead of copying it. The same goes for behavior: the translate button's logic lives once in `ui/Translations.kt` (`TranslationToggles`), and both the conversation and the saved-session screens use it.
 
 ## Accessibility (nice to have)
 
@@ -170,7 +172,7 @@ Every string a person reads follows these rules: UI text, KDoc and comments, the
 
 ### The tutor prompt
 
-`app/src/main/assets/tutor_prompt_template.md` is written for a model. It follows its own rules: the CORRECTION and SUMMARY formats, the arrows, and the dashes are parsed or copied exactly. Don't run it through the humanizer, and keep `PromptRendererTest` green. The Russian render must equal the original hand-written prompt, kept as a test fixture in `app/src/test/resources/russian_tutor_system_prompt.md`.
+`app/src/main/assets/tutor_prompt_template.md` is written for a model. It follows its own rules: the CORRECTION and SUMMARY formats, the arrows, and the dashes are parsed or copied exactly. Don't run it through the humanizer, and keep `PromptRendererTest` green. The Russian render at level A2 is compared byte for byte with `app/src/test/resources/russian_tutor_system_prompt.md`; when the prompt changes on purpose, review the diff and update that file.
 
 ## Kotlin
 
@@ -179,7 +181,7 @@ Every string a person reads follows these rules: UI text, KDoc and comments, the
 - The pre-commit hooks (`.pre-commit-config.yaml`) run Spotless and detekt on each commit that touches Kotlin, so most problems surface before CI. See the README for setup.
 - Use the `kotlin-lsp` plugin for navigation and quick diagnostics while editing. `./gradlew testDebugUnitTest assembleDebug` is the final word.
 - Only `ai/` knows vendors exist. Everything else talks to `TutorModel`, `Provider`, and plain strings. A new vendor is one `TutorModel` class plus one `Provider` entry.
-- Failures cross layers as `Result` wrapping a `TutorError`. The UI maps each error to a message and one action in `ui/Errors.kt`.
+- Failures cross layers as a `Result` holding an `AppException`, which carries an `AppError`. The UI maps each error to a message and one action in `ui/Errors.kt`.
 - ViewModels expose one `StateFlow<…UiState>` and plain functions for events. Screens come in pairs: a `…Route` that wires the ViewModel and Android APIs, and a stateless `…Screen` that tests and previews can call directly.
 - Composables are stateless where possible: state in, events out, `modifier: Modifier = Modifier` as the first optional parameter.
 - Reuse before writing. Shared layout goes in `ui/components/Primitives.kt`; a second copy of a layout means it belongs there.

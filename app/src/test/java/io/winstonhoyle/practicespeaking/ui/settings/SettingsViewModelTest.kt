@@ -2,9 +2,12 @@ package io.winstonhoyle.practicespeaking.ui.settings
 
 import io.winstonhoyle.practicespeaking.TestApp
 import io.winstonhoyle.practicespeaking.ai.Provider
+import io.winstonhoyle.practicespeaking.ai.TokenUsage
 import io.winstonhoyle.practicespeaking.await
+import io.winstonhoyle.practicespeaking.data.settings.VoiceSpeed
 import io.winstonhoyle.practicespeaking.error.AppException
 import io.winstonhoyle.practicespeaking.error.TutorError
+import io.winstonhoyle.practicespeaking.prompt.CefrLevel
 import io.winstonhoyle.practicespeaking.prompt.TutorLanguage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -147,5 +150,27 @@ class SettingsViewModelTest {
         vm.state.await { it.models.isNotEmpty() }
         vm.updateApiKey("sk-ant-2")
         assertEquals(emptyList<String>(), vm.state.value.models)
+    }
+
+    @Test
+    fun levelAndVoiceSpeedAreSaved() {
+        val vm = viewModel()
+        vm.selectLevel(CefrLevel.B2)
+        vm.selectVoiceSpeed(VoiceSpeed.Slow)
+        app.settings.level.await { it == CefrLevel.B2 }
+        app.settings.voiceSpeed.await { it == VoiceSpeed.Slow }
+        assertEquals(CefrLevel.B2, vm.state.value.level)
+    }
+
+    @Test
+    fun theTokenTotalIsShownForTheSelectedProvider() {
+        runBlocking {
+            app.settings.addUsage(Provider.ANTHROPIC, TokenUsage(input = 1200, output = 300, cached = 900))
+            app.settings.addUsage(Provider.OPENAI, TokenUsage(input = 5, output = 1, cached = 0))
+        }
+        val vm = viewModel()
+        assertEquals(TokenUsage(1200, 300, 900), vm.state.value.usage)
+        vm.selectProvider(Provider.OPENAI)
+        assertEquals(TokenUsage(5, 1, 0), vm.state.await { it.provider == Provider.OPENAI }.usage)
     }
 }

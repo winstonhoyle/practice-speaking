@@ -6,6 +6,25 @@ import org.junit.Test
 
 class TutorResponseParserTest {
     @Test
+    fun stressedLineIsSplitOffAndMarksAreKeptOutOfSpeech() {
+        val parsed =
+            TutorResponseParser.parse(
+                "Приве́т! Ты идёшь в магази́н?\nSTRESSED: Я иду́ в магази́не.\nCORRECTION: в магазине → в магази́н | Accusative after a verb of motion.",
+            )
+        assertEquals("Приве́т! Ты идёшь в магази́н?", parsed.spokenText)
+        assertEquals("Привет! Ты идёшь в магазин?", parsed.speechText)
+        assertEquals("Я иду́ в магази́не.", parsed.stressed)
+        assertEquals("в магази́н", parsed.correction?.right)
+    }
+
+    @Test
+    fun stressedLineWorksAfterTheCorrectionToo() {
+        val parsed = TutorResponseParser.parse("Хорошо́.\nCORRECTION: a → b | x\n**STRESSED:** Я до́ма.")
+        assertEquals("Хорошо́.", parsed.spokenText)
+        assertEquals("Я до́ма.", parsed.stressed)
+    }
+
+    @Test
     fun noCorrection() {
         val parsed = TutorResponseParser.parse("Привет! Как дела?")
         assertEquals("Привет! Как дела?", parsed.spokenText)

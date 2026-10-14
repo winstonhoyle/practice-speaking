@@ -30,6 +30,8 @@ style:
     # Tokens are defined as literals in ui/theme; tests and the debug gallery use literal sample data.
     excludes: ['**/test/**', '**/debug/**', '**/ui/theme/**']
     ignoreAnnotated: ['Preview', 'PreviewPsThemes']
+    # An enum entry's number is its value (a voice speed, for example), named by the entry itself.
+    ignoreEnums: true
   UnusedPrivateMember:
     ignoreAnnotated: ['Preview', 'PreviewPsThemes']
   MaxLineLength:

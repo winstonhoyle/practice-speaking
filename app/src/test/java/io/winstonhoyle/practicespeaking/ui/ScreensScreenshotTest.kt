@@ -28,6 +28,7 @@ import io.winstonhoyle.practicespeaking.error.StorageError
 import io.winstonhoyle.practicespeaking.prompt.Summary
 import io.winstonhoyle.practicespeaking.prompt.TutorLanguage
 import io.winstonhoyle.practicespeaking.speech.VoiceStatus
+import io.winstonhoyle.practicespeaking.ui.TranslationState
 import io.winstonhoyle.practicespeaking.ui.conversation.ChatMessage
 import io.winstonhoyle.practicespeaking.ui.conversation.ConversationScreen
 import io.winstonhoyle.practicespeaking.ui.conversation.ConversationUiState
@@ -189,12 +190,15 @@ class ScreensScreenshotTest {
         const val NEW_WORDS = "хлеб — bread, сыр — cheese"
         const val TIP = "Practise the accusative after в and на with verbs of motion."
 
+        /** One open translation, so the screenshots show what the translate button does. */
+        val TRANSLATIONS = TranslationState(shown = setOf(2L), texts = mapOf(2L to "Hi! You went to the shop? What did you buy?"))
+
         val chat =
             listOf(
-                ChatMessage(1, isUser = true, text = "Привет! Вчера я ходил в магазине.", correction = CORRECTION),
-                ChatMessage(2, isUser = false, text = "Привет! Ты ходил в магазин? Что ты купил?"),
-                ChatMessage(3, isUser = true, text = "Я купил хлеб и сыр."),
-                ChatMessage(4, isUser = false, text = "Отлично! А какой сыр ты любишь больше всего?"),
+                ChatMessage(1, isUser = true, text = "Приве́т! Вчера́ я ходи́л в магази́не.", correction = CORRECTION),
+                ChatMessage(2, isUser = false, text = "Приве́т! Ты ходи́л в магази́н? Что ты купи́л?"),
+                ChatMessage(3, isUser = true, text = "Я купи́л хлеб и сыр."),
+                ChatMessage(4, isUser = false, text = "Отли́чно! А како́й сыр ты лю́бишь бо́льше всего́?"),
             )
 
         val SCREENS: List<Pair<String, @Composable () -> Unit>> =
@@ -207,6 +211,7 @@ class ScreensScreenshotTest {
                                 language = TutorLanguage.RUSSIAN,
                                 provider = Provider.ANTHROPIC,
                                 messages = chat,
+                                translations = TRANSLATIONS,
                                 voiceStatus = VoiceStatus.Ready,
                             ),
                         micAvailable = true,
@@ -215,6 +220,7 @@ class ScreensScreenshotTest {
                         onSend = {},
                         onCommand = {},
                         onReplay = {},
+                        onTranslate = {},
                         onErrorAction = {},
                         onEndSession = {},
                         onOpenSettings = {},
@@ -230,6 +236,7 @@ class ScreensScreenshotTest {
                                 language = TutorLanguage.RUSSIAN,
                                 provider = Provider.ANTHROPIC,
                                 messages = chat,
+                                translations = TRANSLATIONS,
                                 voiceStatus = VoiceStatus.Ready,
                                 ended = true,
                                 summary = Summary(MISTAKES, NEW_WORDS, TIP),
@@ -240,6 +247,7 @@ class ScreensScreenshotTest {
                         onSend = {},
                         onCommand = {},
                         onReplay = {},
+                        onTranslate = {},
                         onErrorAction = {},
                         onEndSession = {},
                         onOpenSettings = {},
@@ -315,11 +323,17 @@ class ScreensScreenshotTest {
                                             text = it.text,
                                             correction = it.correction,
                                             createdAt = STARTED,
+                                            translation = TRANSLATIONS.texts[it.id],
                                         )
                                     },
+                                translations = TRANSLATIONS,
                             ),
                         scrollToMessageId = null,
                         onBack = {},
+                        onHear = {},
+                        onTranslate = {},
+                        onContinue = {},
+                        onErrorAction = {},
                     )
                 },
                 "settings" to {
@@ -337,6 +351,8 @@ class ScreensScreenshotTest {
                         onApiKey = {},
                         onModel = {},
                         onLanguage = {},
+                        onLevel = {},
+                        onVoiceSpeed = {},
                         onThemeMode = {},
                         onTestKey = {},
                         onStart = {},
@@ -356,6 +372,7 @@ class ScreensScreenshotTest {
                         onSend = {},
                         onCommand = {},
                         onReplay = {},
+                        onTranslate = {},
                         onErrorAction = {},
                         onEndSession = {},
                         onOpenSettings = {},

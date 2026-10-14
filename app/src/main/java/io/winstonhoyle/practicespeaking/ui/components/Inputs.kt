@@ -198,10 +198,30 @@ private fun InputsPreview() =
         }
     }
 
-/** Icon-only action for top bars. */
+/**
+ * Icon-only action: top bars, the actions under a message, and the correction card. [subtle]
+ * draws a smaller icon in the secondary text color, for actions that sit beside content
+ * instead of leading a screen. The touch target stays 48dp either way.
+ */
 @Composable
-fun PsIconAction(icon: ImageVector, contentDescription: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    androidx.compose.material3.IconButton(onClick = onClick, modifier = modifier) {
-        Icon(icon, contentDescription = contentDescription)
+fun PsIconAction(
+    icon: ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    subtle: Boolean = false,
+) {
+    androidx.compose.material3.IconButton(onClick = onClick, modifier = modifier, enabled = enabled) {
+        if (subtle) {
+            Icon(
+                icon,
+                contentDescription = contentDescription,
+                tint = PsTheme.colors.onSurfaceVariant,
+                modifier = Modifier.size(PsTheme.sizes.iconSmall),
+            )
+        } else {
+            Icon(icon, contentDescription = contentDescription)
+        }
     }
 }

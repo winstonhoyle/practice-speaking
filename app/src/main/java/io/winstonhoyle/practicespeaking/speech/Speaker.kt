@@ -21,6 +21,9 @@ interface Speaker {
 
     fun setLanguage(localeTag: String)
 
+    /** Speech rate for everything spoken after this call; 1.0 is the engine's normal speed. */
+    fun setRate(rate: Float)
+
     fun speak(text: String)
 
     fun stop()

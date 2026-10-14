@@ -1,8 +1,11 @@
 package io.winstonhoyle.practicespeaking.ui.session
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -13,15 +16,19 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.winstonhoyle.practicespeaking.R
 import io.winstonhoyle.practicespeaking.data.db.MessageEntity
+import io.winstonhoyle.practicespeaking.ui.AppErrorBanner
+import io.winstonhoyle.practicespeaking.ui.ErrorAction
 import io.winstonhoyle.practicespeaking.ui.components.ChatMessageItem
 import io.winstonhoyle.practicespeaking.ui.components.EmptyState
 import io.winstonhoyle.practicespeaking.ui.components.LanguageBadge
 import io.winstonhoyle.practicespeaking.ui.components.LoadingState
 import io.winstonhoyle.practicespeaking.ui.components.MetaRow
 import io.winstonhoyle.practicespeaking.ui.components.ProviderBadge
+import io.winstonhoyle.practicespeaking.ui.components.PsButton
 import io.winstonhoyle.practicespeaking.ui.components.PsIcons
 import io.winstonhoyle.practicespeaking.ui.components.PsTopBar
 import io.winstonhoyle.practicespeaking.ui.components.SecondaryText
@@ -34,13 +41,37 @@ import io.winstonhoyle.practicespeaking.ui.history.providerOf
 import io.winstonhoyle.practicespeaking.ui.theme.PsTheme
 
 @Composable
-fun SessionDetailRoute(viewModel: SessionDetailViewModel, scrollToMessageId: Long?, onBack: () -> Unit) {
+fun SessionDetailRoute(
+    viewModel: SessionDetailViewModel,
+    scrollToMessageId: Long?,
+    onOpenSettings: () -> Unit,
+    onContinue: () -> Unit,
+    onBack: () -> Unit,
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    SessionDetailScreen(state, scrollToMessageId, onBack)
+    LifecycleResumeEffect(Unit) { onPauseOrDispose { viewModel.stopSpeaking() } }
+    SessionDetailScreen(
+        state = state,
+        scrollToMessageId = scrollToMessageId,
+        onBack = onBack,
+        onHear = viewModel::replay,
+        onTranslate = viewModel::toggleTranslation,
+        onContinue = onContinue,
+        onErrorAction = { action -> if (action == ErrorAction.OpenSettings) onOpenSettings() else viewModel.dismissTranslationError() },
+    )
 }
 
 @Composable
-fun SessionDetailScreen(state: SessionDetailUiState, scrollToMessageId: Long?, onBack: () -> Unit, modifier: Modifier = Modifier) {
+fun SessionDetailScreen(
+    state: SessionDetailUiState,
+    scrollToMessageId: Long?,
+    onBack: () -> Unit,
+    onHear: (String) -> Unit,
+    onTranslate: (Long) -> Unit,
+    onContinue: () -> Unit,
+    onErrorAction: (ErrorAction) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val session = state.session
     Scaffold(
         modifier = modifier,
@@ -58,6 +89,20 @@ fun SessionDetailScreen(state: SessionDetailUiState, scrollToMessageId: Long?, o
                 },
             )
         },
+        bottomBar = {
+            // A session can only continue on a provider this build still knows.
+            if (session != null && providerOf(session.provider) != null) {
+                PsButton(
+                    text = stringResource(R.string.session_continue),
+                    onClick = onContinue,
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .navigationBarsPadding()
+                            .padding(horizontal = PsTheme.spacing.xl, vertical = PsTheme.spacing.md),
+                )
+            }
+        },
     ) { padding ->
         when {
             state.loading -> {
@@ -73,13 +118,23 @@ fun SessionDetailScreen(state: SessionDetailUiState, scrollToMessageId: Long?, o
             }
 
             else -> {
-                Transcript(
-                    messages = state.messages,
-                    header = "${formatSessionDate(session.startedAt)} · ${session.model}",
-                    summary = Triple(session.summaryMistakes, session.summaryNewWords, session.summaryTip),
-                    scrollToMessageId = scrollToMessageId,
-                    modifier = Modifier.padding(padding),
-                )
+                Column(Modifier.padding(padding)) {
+                    state.translationError?.let { error ->
+                        AppErrorBanner(
+                            error,
+                            onErrorAction,
+                            Modifier.padding(horizontal = PsTheme.spacing.lg, vertical = PsTheme.spacing.sm),
+                        )
+                    }
+                    Transcript(
+                        state = state,
+                        header = "${formatSessionDate(session.startedAt)} · ${session.model}",
+                        summary = Triple(session.summaryMistakes, session.summaryNewWords, session.summaryTip),
+                        scrollToMessageId = scrollToMessageId,
+                        onHear = onHear,
+                        onTranslate = onTranslate,
+                    )
+                }
             }
         }
     }
@@ -87,12 +142,15 @@ fun SessionDetailScreen(state: SessionDetailUiState, scrollToMessageId: Long?, o
 
 @Composable
 private fun Transcript(
-    messages: List<MessageEntity>,
+    state: SessionDetailUiState,
     header: String,
     summary: Triple<String?, String?, String?>,
     scrollToMessageId: Long?,
+    onHear: (String) -> Unit,
+    onTranslate: (Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val messages = state.messages
     val listState = rememberLazyListState()
     LaunchedEffect(messages.isNotEmpty(), scrollToMessageId) {
         val index = messages.indexOfFirst { it.id == scrollToMessageId }
@@ -109,9 +167,14 @@ private fun Transcript(
         item(key = "header") { SecondaryText(header) }
         items(messages, key = { it.id }) { message ->
             ChatMessageItem(
-                text = message.text,
+                text = message.stressed ?: message.text,
                 isUser = message.role == MessageEntity.ROLE_USER,
                 correction = message.correction,
+                translation = state.translations.visible(message.id, saved = message.translation),
+                translating = message.id in state.translations.loading,
+                onHear = { onHear(message.text) },
+                onTranslate = { onTranslate(message.id) },
+                onHearPhrase = onHear,
             )
         }
         if (hasSummary) {
