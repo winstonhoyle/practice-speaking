@@ -34,11 +34,12 @@ A new version installs over the old one. If it changes the database, History sta
 - Corrections appear under your message (~~в магазине~~ → **в магазин**) and are never read aloud.
 - Hold the mic as long as you like. Pauses to think don't cut you off; what you said is sent when you let go.
 - Pick your level from A1 to C2, and the tutor pitches its words and grammar to it.
-- Every message has a hear-it button, your own sentences included, so you can compare your pronunciation, and a translate button that shows the English under it. The correction card reads the correct form aloud too.
+- Under every message, a hear-it button reads it aloud. Use it on your own sentences to compare your pronunciation; the correction card has one for the correct form.
+- A translate button shows the English inside the message.
 - In Russian, the tutor marks word stress (приве́т) in its replies and in your sentences. The voice and search use the plain words.
 - Slower, Harder, and Translate buttons adjust the tutor mid-conversation; Slower also slows the voice, and Settings has a voice speed. End session gives you a summary of your mistakes, new words, and one thing to practise next.
 - History lists past sessions, and full-text search covers every message and correction ("магазин" also finds "магазине"). Open a session to read it, translate it, or continue it where you left off.
-- Settings shows how many tokens you've used with each provider. The total keeps counting when you delete sessions.
+- Settings shows how many tokens you've used with each provider. Deleting sessions doesn't lower the total.
 
 ## Your API key stays on your phone
 
@@ -67,13 +68,25 @@ Three rules keep requests cheap and correct:
 - The system prompt is byte-identical for a given language and level (no dates, no IDs), so every provider can cache it.
 - Models drift from the output format, so the parser accepts `->` as well as `→`, stray markdown, and summaries written as lists. If a block is malformed, the app shows the text as it came.
 
+### Where things are
+
+| Path | What's there |
+|---|---|
+| [`app/src/main/java/…/practicespeaking/`](app/src/main/java/io/winstonhoyle/practicespeaking/) | The app's code, with a [source map](app/src/main/java/io/winstonhoyle/practicespeaking/README.md) and the path of one conversation turn |
+| [`app/src/test/java/…/practicespeaking/`](app/src/test/java/io/winstonhoyle/practicespeaking/) | The [tests](app/src/test/java/io/winstonhoyle/practicespeaking/README.md), mirroring the app's packages |
+| `app/src/main/assets/` | The tutor prompt template |
+| `app/schemas/` | Room's exported database schema |
+| [`docs/`](docs/DESIGN.md) | The design system, screenshots, and third-party licenses |
+| `.github/workflows/` | CI on every push, and the release build on a version tag |
+| `config/detekt/`, `.editorconfig`, `.pre-commit-config.yaml` | Static analysis, formatting, and commit hooks |
+
 ### Add a provider
+
+A new provider touches only `ai/` and its tests:
 
 1. Add an entry to `Provider` in `ai/Provider.kt`: display name, badge name, default model, key hint, the page where people create a key, and a one-color logo drawable. Settings, the badges, and the key link read from it.
 2. Write a `TutorModel` class in `ai/`. Wrap each call in `providerCall` (from `ProviderSupport.kt`) so its exceptions become `TutorError`s, return the reply text with the raw response as `providerPayload` and the token counts as `usage`, and replay that payload on the next turn. Add its branch to `TutorModelFactory`. `listModels()` reads the provider's model list for the Settings picker.
 3. Subclass `TutorModelContractTest` with the provider's mock responses: a reply, a refusal, an error, a context-length error, the key check, and a model list. The shared suite checks error mapping, refusals, history replay, token usage, `testKey()`, and `listModels()` against MockWebServer.
-
-Nothing outside `ai/` changes.
 
 ### Errors
 

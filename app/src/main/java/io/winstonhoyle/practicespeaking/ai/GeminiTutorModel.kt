@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException
 import com.fasterxml.jackson.databind.JsonNode
 import io.winstonhoyle.practicespeaking.error.AppException
 import io.winstonhoyle.practicespeaking.error.TutorError
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -38,7 +39,7 @@ class GeminiTutorModel internal constructor(
                 execute(
                     Request
                         .Builder()
-                        .url("$baseUrl/models/$model:generateContent")
+                        .url(modelUrl(":generateContent"))
                         .post(mapper.writeValueAsString(body).toRequestBody(JSON)),
                 )
 
@@ -65,7 +66,7 @@ class GeminiTutorModel internal constructor(
 
     override suspend fun testKey(): Result<Unit> =
         call {
-            execute(Request.Builder().url("$baseUrl/models/$model").get())
+            execute(Request.Builder().url(modelUrl()).get())
             Unit
         }
 
@@ -75,7 +76,11 @@ class GeminiTutorModel internal constructor(
             val ids = mutableListOf<String>()
             var pageToken: String? = null
             do {
-                val url = "$baseUrl/models?pageSize=$PAGE_SIZE" + (pageToken?.let { "&pageToken=$it" } ?: "")
+                val url =
+                    modelsUrl()
+                        .addQueryParameter("pageSize", PAGE_SIZE.toString())
+                        .apply { pageToken?.let { addQueryParameter("pageToken", it) } }
+                        .build()
                 val page = execute(Request.Builder().url(url).get())
                 page.path("models").forEach { m ->
                     val id = m.path("name").asText().removePrefix("models/")
@@ -86,6 +91,11 @@ class GeminiTutorModel internal constructor(
             } while (pageToken != null)
             ids
         }
+
+    // The model ID is typed by the user, so it is escaped as one path segment rather than pasted into the URL.
+    private fun modelUrl(suffix: String = "") = modelsUrl().addPathSegment(model + suffix).build()
+
+    private fun modelsUrl() = baseUrl.toHttpUrl().newBuilder().addPathSegment("models")
 
     private fun toContent(turn: Turn): JsonNode {
         if (turn.role == Role.ASSISTANT && turn.providerPayload != null) return mapper.readTree(turn.providerPayload)

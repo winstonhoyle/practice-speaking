@@ -100,4 +100,11 @@ class GeminiTutorModelTest : TutorModelContractTest() {
         enqueue("""{"error":{"code":400,"message":"API key not valid.","details":[{"reason":"API_KEY_INVALID"}]}}""", 400)
         assertEquals(TutorError.InvalidKey, replyTo(model(), Turn(Role.USER, "x")).appError())
     }
+
+    @Test
+    fun aTypedModelIdStaysOnePathSegment() {
+        enqueue(testKeyBody())
+        runBlocking { GeminiTutorModel("test-key", "odd/model?x=1", baseUrl(), OkHttpClient()).testKey() }
+        assertEquals("/v1beta/models/odd%2Fmodel%3Fx=1", server.takeRequest().path)
+    }
 }

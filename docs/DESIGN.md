@@ -1,6 +1,6 @@
 # Design system
 
-Practice Speaking is built from one small component library. Feature screens only arrange components; they never style anything themselves.
+Practice Speaking is built from one small component library. Feature screens only arrange components; they never style anything themselves. For where the screen and component code lives, see the [ui/ README](../app/src/main/java/io/winstonhoyle/practicespeaking/ui/README.md).
 
 The mood is calm and uncluttered, closer to a conversation than a classroom. Each screen has one clear action, usually the mic.
 
