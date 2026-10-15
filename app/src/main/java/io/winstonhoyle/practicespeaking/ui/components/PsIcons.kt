@@ -29,4 +29,5 @@ object PsIcons {
     val Failure: ImageVector @Composable get() = ImageVector.vectorResource(R.drawable.ic_cancel)
     val Info: ImageVector @Composable get() = ImageVector.vectorResource(R.drawable.ic_info)
     val Translate: ImageVector @Composable get() = ImageVector.vectorResource(R.drawable.ic_translate)
+    val Edit: ImageVector @Composable get() = ImageVector.vectorResource(R.drawable.ic_edit)
 }

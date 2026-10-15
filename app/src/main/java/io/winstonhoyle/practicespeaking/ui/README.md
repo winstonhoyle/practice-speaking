@@ -4,7 +4,7 @@ Part of the [source map](../README.md). [docs/DESIGN.md](../../../../../../../..
 
 | Folder | What's in it |
 |---|---|
-| `conversation/` | The practice screen: mic, chat, commands, end-of-session summary. |
+| `conversation/` | The practice screen: mic, chat, commands, going back to edit a message, end-of-session summary. |
 | `history/` | Past sessions, swipe to delete, and full-text search. |
 | `session/` | One saved session: read, translate, hear, or continue it. |
 | `settings/` | Provider, key, model, language, level, voice speed, theme, and token totals. |

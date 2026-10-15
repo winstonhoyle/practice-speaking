@@ -8,6 +8,7 @@ import android.os.Looper
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
+import android.util.Log
 import io.winstonhoyle.practicespeaking.error.SpeechError
 
 /**
@@ -50,12 +51,14 @@ class SpeechInput(context: Context, private val listener: Listener) {
 
                 override fun onResults(results: Bundle?) {
                     listening = false
+                    Log.d(TAG, "segment result, holding=$holding")
                     results.firstResult()?.let(utterance::add)
                     if (holding) restartSoon() else finish()
                 }
 
                 override fun onError(error: Int) {
                     listening = false
+                    Log.d(TAG, "segment error $error, holding=$holding")
                     when {
                         holding && error in KEEP_LISTENING -> restartSoon()
 
@@ -149,6 +152,7 @@ class SpeechInput(context: Context, private val listener: Listener) {
             ?.takeIf { it.isNotBlank() }
 
     companion object {
+        private const val TAG = "SpeechInput"
         private const val PAUSE_MILLIS = 4_000L
         private const val RESTART_DELAY_MILLIS = 100L
 

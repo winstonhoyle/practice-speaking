@@ -10,6 +10,7 @@
     <string name="cd_thinking">Tutor is thinking</string>
     <string name="cd_correction">Correction</string>
     <string name="cd_hear_it">Hear it</string>
+    <string name="cd_edit_message">Edit and say again</string>
     <string name="cd_hear_correction">Hear the correct form</string>
     <string name="cd_translate">Show translation</string>
     <string name="cd_hide_translation">Hide translation</string>

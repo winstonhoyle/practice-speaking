@@ -20,8 +20,9 @@ import io.winstonhoyle.practicespeaking.ui.theme.PsTheme
  * If speech-to-text changed the phrase so it can't be found, only the card is shown.
  *
  * Under the bubble, [onHear] reads the message aloud (on the learner's own message too, to
- * compare pronunciation) and [onTranslate] shows or hides [translation]. The correction card's
- * button reads the correct form through [onHearPhrase].
+ * compare pronunciation) and [onTranslate] shows or hides [translation]. [onEdit], on a learner
+ * message, goes back to it to change it. The correction card's button reads the correct form
+ * through [onHearPhrase].
  */
 @Composable
 fun ChatMessageItem(
@@ -34,6 +35,7 @@ fun ChatMessageItem(
     onHear: (() -> Unit)? = null,
     onTranslate: (() -> Unit)? = null,
     onHearPhrase: ((String) -> Unit)? = null,
+    onEdit: (() -> Unit)? = null,
 ) {
     val parsed = remember(correction) { correction?.let(TutorResponseParser::parseCorrection) }
     val highlights = remember(text, parsed) { listOfNotNull(parsed?.let { findPhrase(text, it.wrong) }) }
@@ -44,8 +46,8 @@ fun ChatMessageItem(
             highlights = highlights,
             translation = if (translating) stringResource(R.string.translating) else translation,
         )
-        if (onHear != null || onTranslate != null) {
-            MessageActions(isUser, translationShown = translation != null, translating, onHear, onTranslate)
+        if (onHear != null || onTranslate != null || onEdit != null) {
+            MessageActions(isUser, translationShown = translation != null, translating, onHear, onTranslate, onEdit)
         }
         if (isUser && correction != null) {
             CorrectionCard(
@@ -59,7 +61,7 @@ fun ChatMessageItem(
     }
 }
 
-/** Hear it and translate, on the same side as the bubble they belong to. */
+/** Hear it, translate, and edit, on the same side as the bubble they belong to. */
 @Composable
 private fun MessageActions(
     isUser: Boolean,
@@ -67,6 +69,7 @@ private fun MessageActions(
     translating: Boolean,
     onHear: (() -> Unit)?,
     onTranslate: (() -> Unit)?,
+    onEdit: (() -> Unit)?,
 ) {
     Row(horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start, modifier = Modifier.fillMaxWidth()) {
         // No gap between the buttons: their touch targets already space the small icons apart.
@@ -76,6 +79,7 @@ private fun MessageActions(
                 val label = if (translationShown) R.string.cd_hide_translation else R.string.cd_translate
                 PsIconAction(PsIcons.Translate, stringResource(label), onTranslate, enabled = !translating, subtle = true)
             }
+            if (onEdit != null) PsIconAction(PsIcons.Edit, stringResource(R.string.cd_edit_message), onEdit, subtle = true)
         }
     }
 }
@@ -102,6 +106,7 @@ private fun ChatMessageItemPreview() =
                 onHear = {},
                 onTranslate = {},
                 onHearPhrase = {},
+                onEdit = {},
             )
             ChatMessageItem(
                 "Ты идёшь в магази́н? Что хо́чешь купи́ть?",

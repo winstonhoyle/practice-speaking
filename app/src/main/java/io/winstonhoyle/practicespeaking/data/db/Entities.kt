@@ -9,6 +9,7 @@ import androidx.room.PrimaryKey
 import io.winstonhoyle.practicespeaking.ai.Provider
 import io.winstonhoyle.practicespeaking.enumByName
 import io.winstonhoyle.practicespeaking.prompt.CefrLevel
+import io.winstonhoyle.practicespeaking.prompt.Summary
 import io.winstonhoyle.practicespeaking.prompt.TutorLanguage
 
 @Entity(tableName = "sessions")
@@ -72,6 +73,18 @@ val SessionEntity.providerOrNull: Provider? get() = enumByName<Provider>(provide
 
 /** The level the session started at, or the default if it's missing. */
 val SessionEntity.cefrLevel: CefrLevel get() = enumByName<CefrLevel>(level) ?: CefrLevel.DEFAULT
+
+/** The end-of-session summary, or null when the tutor never gave one. */
+val SessionEntity.summary: Summary?
+    get() =
+        Summary(summaryMistakes, summaryNewWords, summaryTip).takeIf { s ->
+            listOf(s.mistakes, s.newWords, s.tip).any { !it.isNullOrBlank() }
+        }
+
+val MessageEntity.isUser: Boolean get() = role == MessageEntity.ROLE_USER
+
+/** What the screen shows: the stressed copy when there is one. */
+val MessageEntity.displayText: String get() = stressed ?: text
 
 /** A session row for History, with its message count. */
 data class SessionRow(

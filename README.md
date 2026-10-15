@@ -8,6 +8,8 @@ An Android app for practising a foreign language out loud. You hold the mic and 
 
 It supports Russian, French, Portuguese (Brazil), German, and Spanish (Mexico). You bring your own API key from Anthropic, OpenAI, or Google Gemini.
 
+Made by [Winston Hoyle](https://winstonhoyle.com).
+
 ## Install it on your phone
 
 1. On your Android phone (Android 8 or newer), open the [latest release](https://github.com/winstonhoyle/practice-speaking/releases/latest) and download the `.apk` file.
@@ -36,6 +38,7 @@ A new version installs over the old one. If it changes the database, History sta
 - Pick your level from A1 to C2, and the tutor pitches its words and grammar to it.
 - Under every message, a hear-it button reads it aloud. Use it on your own sentences to compare your pronunciation; the correction card has one for the correct form.
 - A translate button shows the English inside the message.
+- The pencil on your own message takes the conversation back to it: that message and everything after it are removed, and its text goes into the text box to fix and send, or you just say it again.
 - In Russian, the tutor marks word stress (приве́т) in its replies and in your sentences. The voice and search use the plain words.
 - Slower, Harder, and Translate buttons adjust the tutor mid-conversation; Slower also slows the voice, and Settings has a voice speed. End session gives you a summary of your mistakes, new words, and one thing to practise next.
 - History lists past sessions, and full-text search covers every message and correction ("магазин" also finds "магазине"). Open a session to read it, translate it, or continue it where you left off.

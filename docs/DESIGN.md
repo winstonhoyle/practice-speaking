@@ -106,7 +106,7 @@ Each component is stateless (state in, events out), takes `modifier: Modifier = 
 |---|---|
 | `PsTopBar` | Title, optional back button, optional actions |
 | `MessageBubble` | User or tutor message; `highlights` underline mistakes; an optional translation shows inside, a step quieter |
-| `ChatMessageItem` | One transcript message: the bubble, its correction card, and the hear-it and translate actions under it |
+| `ChatMessageItem` | One transcript message: the bubble, its correction card, and the hear-it, translate, and edit actions under it |
 | `CorrectionCard` | ~~wrong~~ → **right** + short explanation, with an optional button that reads the correct form |
 | `MicButton` | Hold-to-talk; `Idle / Listening / Thinking / Speaking / Disabled`; pulse; haptics |
 | `ThinkingIndicator` | Three animated dots in a tutor bubble |

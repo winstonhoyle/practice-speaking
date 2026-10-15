@@ -9,10 +9,11 @@ import io.winstonhoyle.practicespeaking.ai.Role
 import io.winstonhoyle.practicespeaking.ai.Turn
 import io.winstonhoyle.practicespeaking.ai.TutorModel
 import io.winstonhoyle.practicespeaking.data.MessageTranslator
-import io.winstonhoyle.practicespeaking.data.db.MessageEntity
 import io.winstonhoyle.practicespeaking.data.db.SessionEntity
 import io.winstonhoyle.practicespeaking.data.db.SessionRepository
 import io.winstonhoyle.practicespeaking.data.db.cefrLevel
+import io.winstonhoyle.practicespeaking.data.db.displayText
+import io.winstonhoyle.practicespeaking.data.db.isUser
 import io.winstonhoyle.practicespeaking.data.db.providerOrNull
 import io.winstonhoyle.practicespeaking.data.db.tutorLanguage
 import io.winstonhoyle.practicespeaking.data.settings.SettingsRepository
@@ -55,6 +56,8 @@ data class ConversationUiState(
     val messages: List<ChatMessage> = emptyList(),
     val translations: TranslationState = TranslationState(),
     val partialTranscript: String = "",
+    /** What's typed in the text box. Going back to a message puts its text here. */
+    val draft: String = "",
     val isListening: Boolean = false,
     val isThinking: Boolean = false,
     val isSpeaking: Boolean = false,
@@ -84,9 +87,10 @@ data class ConversationUiState(
  * provider, model, and level for good.
  *
  * Dependencies come in through the constructor (see `AppContainer`); each argument is a separate
- * app service, and grouping them would only hide what the ViewModel uses.
+ * app service, and grouping them would only hide what the ViewModel uses. Each public function is
+ * one thing the screen can do, so the function count grows with the screen.
  */
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 class ConversationViewModel(
     private val settings: SettingsRepository,
     private val sessions: SessionRepository,
@@ -145,8 +149,7 @@ class ConversationViewModel(
         tutor = key?.let { tutorModels(provider, it, settings.model(provider).first()) }
         currentKey = key
         systemPrompt = prompts.render(language, level)
-        speaker.setLanguage(language.localeTag)
-        speaker.setRate(speed.rate)
+        useVoice(language, speed)
         _state.update {
             it.copy(
                 loading = false,
@@ -191,30 +194,47 @@ class ConversationViewModel(
         turns.clear()
         saved.forEach { message ->
             turns +=
-                if (message.role == MessageEntity.ROLE_USER) {
-                    Turn(Role.USER, message.text)
-                } else {
-                    Turn(Role.ASSISTANT, message.stressed ?: message.text, message.providerPayload)
-                }
+                if (message.isUser) Turn(Role.USER, message.text) else Turn(Role.ASSISTANT, message.displayText, message.providerPayload)
         }
         translations.remember(saved.mapNotNull { message -> message.translation?.let { message.id to it } }.toMap())
-        speaker.setLanguage(language.localeTag)
-        speaker.setRate(speed.rate)
+        useVoice(language, speed)
         _state.update { state ->
             state.copy(
                 language = language,
                 level = level,
                 voiceSpeed = speed,
-                messages =
-                    saved.map {
-                        ChatMessage(
-                            it.id,
-                            isUser = it.role == MessageEntity.ROLE_USER,
-                            text = it.stressed ?: it.text,
-                            correction = it.correction,
-                        )
-                    },
+                messages = saved.map { ChatMessage(it.id, isUser = it.isUser, text = it.displayText, correction = it.correction) },
             )
+        }
+    }
+
+    private fun useVoice(language: TutorLanguage, speed: VoiceSpeed) {
+        speaker.setLanguage(language.localeTag)
+        speaker.setRate(speed.rate)
+    }
+
+    fun onDraftChange(text: String) = _state.update { it.copy(draft = text) }
+
+    /**
+     * Goes back to just before a learner message: it and everything after it are deleted, and its
+     * text goes into the text box to fix and send, or the learner just says it again.
+     */
+    fun editFrom(messageId: Long) {
+        val current = _state.value
+        val session = sessionId?.takeIf { current.canSend && !current.isListening } ?: return
+        val index = current.messages.indexOfFirst { it.id == messageId && it.isUser }
+        if (index < 0) return
+        speaker.stop()
+        viewModelScope.launch {
+            guarded {
+                sessions.deleteMessagesFrom(session, messageId)
+                // Every saved message added one turn, so the two lists line up.
+                turns.subList(index, turns.size).clear()
+                pendingUserMessageId = null
+                _state.update {
+                    it.copy(messages = it.messages.take(index), draft = Stress.strip(current.messages[index].text), error = null)
+                }
+            }
         }
     }
 

@@ -114,6 +114,37 @@ class ConversationViewModelTest {
     }
 
     @Test
+    fun editingAMessageGoesBackToItAndTheNextSendReplaysOnlyWhatIsLeft() {
+        app.tutor.enqueue("Привет!")
+        app.tutor.enqueue("Хорошо.")
+        app.tutor.enqueue("Отлично.")
+        val vm = viewModel()
+        vm.send("Привет")
+        vm.state.await { it.messages.size == 2 && !it.isThinking }
+        vm.send("Как дила?")
+        val typo = vm.state.await { it.messages.size == 4 && !it.isThinking }.messages[2]
+
+        vm.editFrom(typo.id)
+        val back = vm.state.await { it.messages.size == 2 }
+        assertEquals("Как дила?", back.draft)
+
+        vm.send("Как дела?")
+        vm.state.await { it.messages.size == 4 && !it.isThinking }
+        assertEquals(listOf("Привет", "Привет!", "Как дела?"), app.tutor.requests[2].map { it.text })
+        val saved =
+            runBlocking {
+                app.sessions.getMessages(
+                    app.sessions
+                        .observeSessions()
+                        .first()
+                        .single()
+                        .id,
+                )
+            }
+        assertEquals(listOf("Привет", "Привет!", "Как дела?", "Отлично."), saved.map { it.text })
+    }
+
+    @Test
     fun theSessionRecordsProviderAndModel() {
         runBlocking { app.settings.setModel(Provider.ANTHROPIC, "claude-custom") }
         app.tutor.enqueue("Привет!")

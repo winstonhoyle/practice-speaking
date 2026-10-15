@@ -1,6 +1,7 @@
 package io.winstonhoyle.practicespeaking.ui.components
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -53,6 +54,23 @@ class ComponentsTest {
             up()
         }
 
+        assertEquals(listOf("start", "end"), events)
+    }
+
+    @Test
+    fun micButton_slidingOffTheButtonKeepsHolding() {
+        val events = mutableListOf<String>()
+        compose.setContent {
+            PsTheme { MicButton(MicState.Listening, onPressStart = { events += "start" }, onPressEnd = { events += "end" }) }
+        }
+
+        compose.onNodeWithContentDescription("Listening…").performTouchInput {
+            down(center)
+            moveTo(Offset(width * 3f, height * 3f))
+        }
+        assertEquals(listOf("start"), events)
+
+        compose.onNodeWithContentDescription("Listening…").performTouchInput { up() }
         assertEquals(listOf("start", "end"), events)
     }
 
@@ -121,6 +139,14 @@ class ComponentsTest {
         compose.onNodeWithContentDescription("Show key").performClick()
 
         compose.onNodeWithContentDescription("Hide key").assertExists()
+    }
+
+    @Test
+    fun chatMessageActions_edit() {
+        val events = mutableListOf<String>()
+        compose.setContent { PsTheme { ChatMessageItem("Привет", isUser = true, onEdit = { events += "edit" }) } }
+        compose.onNodeWithContentDescription("Edit and say again").performClick()
+        assertEquals(listOf("edit"), events)
     }
 
     @Test

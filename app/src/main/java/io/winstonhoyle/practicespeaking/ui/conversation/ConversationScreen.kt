@@ -27,7 +27,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -112,6 +111,8 @@ fun ConversationRoute(viewModel: ConversationViewModel, onOpenSettings: () -> Un
         onCommand = viewModel::onCommand,
         onReplay = viewModel::replay,
         onTranslate = viewModel::toggleTranslation,
+        onEdit = viewModel::editFrom,
+        onDraftChange = viewModel::onDraftChange,
         onErrorAction = { action ->
             when (action) {
                 ErrorAction.OpenSettings -> {
@@ -158,6 +159,8 @@ fun ConversationScreen(
     onCommand: (TutorCommand) -> Unit,
     onReplay: (String) -> Unit,
     onTranslate: (Long) -> Unit,
+    onEdit: (Long) -> Unit,
+    onDraftChange: (String) -> Unit,
     onErrorAction: (ErrorAction) -> Unit,
     onEndSession: () -> Unit,
     onOpenSettings: () -> Unit,
@@ -203,11 +206,11 @@ fun ConversationScreen(
                 }
 
                 else -> {
-                    Transcript(state, onReplay, onTranslate, Modifier.weight(1f))
+                    Transcript(state, onReplay, onTranslate, onEdit, Modifier.weight(1f))
                 }
             }
             Banners(state, onErrorAction, onEndSession)
-            Controls(state, micAvailable, onPressStart, onPressEnd, onSend, onCommand)
+            Controls(state, micAvailable, onPressStart, onPressEnd, onSend, onDraftChange, onCommand)
         }
     }
 
@@ -223,7 +226,13 @@ fun ConversationScreen(
 }
 
 @Composable
-private fun Transcript(state: ConversationUiState, onReplay: (String) -> Unit, onTranslate: (Long) -> Unit, modifier: Modifier = Modifier) {
+private fun Transcript(
+    state: ConversationUiState,
+    onReplay: (String) -> Unit,
+    onTranslate: (Long) -> Unit,
+    onEdit: (Long) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     if (state.messages.isEmpty() && !state.isListening) {
         EmptyState(
             icon = PsIcons.Mic,
@@ -251,6 +260,7 @@ private fun Transcript(state: ConversationUiState, onReplay: (String) -> Unit, o
                 onHear = { onReplay(message.text) },
                 onTranslate = { onTranslate(message.id) },
                 onHearPhrase = onReplay,
+                onEdit = if (message.isUser && state.canSend) ({ onEdit(message.id) }) else null,
                 modifier = Modifier.animateItem(),
             )
         }
@@ -291,9 +301,9 @@ private fun Controls(
     onPressStart: () -> Unit,
     onPressEnd: () -> Unit,
     onSend: (String) -> Unit,
+    onDraftChange: (String) -> Unit,
     onCommand: (TutorCommand) -> Unit,
 ) {
-    var draft by rememberSaveable { mutableStateOf("") }
     val micState =
         when {
             !micAvailable || state.needsKey || state.ended || state.loading -> MicState.Disabled
@@ -313,11 +323,11 @@ private fun Controls(
         CommandChipRow(onCommand = onCommand, enabled = state.canSend && state.messages.isNotEmpty())
         MicButton(micState, onPressStart = onPressStart, onPressEnd = onPressEnd)
         ChatInputBar(
-            value = draft,
-            onValueChange = { draft = it },
+            value = state.draft,
+            onValueChange = onDraftChange,
             onSend = {
-                onSend(draft)
-                draft = ""
+                onSend(state.draft)
+                onDraftChange("")
             },
             enabled = state.canSend,
         )

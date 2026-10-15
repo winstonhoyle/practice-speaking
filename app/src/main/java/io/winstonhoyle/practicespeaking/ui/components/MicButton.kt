@@ -6,7 +6,8 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -88,12 +89,19 @@ fun MicButton(state: MicState, onPressStart: () -> Unit, onPressEnd: () -> Unit,
                         contentDescription = label
                     }.pointerInput(enabled) {
                         if (!enabled) return@pointerInput
-                        detectTapGestures(onPress = {
+                        awaitEachGesture {
+                            awaitFirstDown().consume()
                             haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                             currentStart()
-                            tryAwaitRelease()
-                            currentEnd()
-                        })
+                            try {
+                                // Only lifting the finger ends the hold; drifting past the pulsing edge must not.
+                                do {
+                                    val event = awaitPointerEvent()
+                                } while (event.changes.any { it.pressed })
+                            } finally {
+                                currentEnd()
+                            }
+                        }
                     },
         ) {
             Icon(

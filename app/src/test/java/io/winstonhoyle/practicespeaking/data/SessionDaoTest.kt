@@ -53,6 +53,24 @@ class SessionDaoTest {
         }
 
     @Test
+    fun deletingFromAMessageKeepsEarlierOnesAndResetsTheTitleAtTheStart() =
+        runBlocking {
+            val id = repo.startSession(TutorLanguage.RUSSIAN, Provider.ANTHROPIC, "m")
+            val first = repo.addUserMessage(id, "Привет")
+            repo.addAssistantMessage(id, "Привет!", null)
+            val second = repo.addUserMessage(id, "Как дела?")
+            repo.addAssistantMessage(id, "Хорошо.", null)
+
+            repo.deleteMessagesFrom(id, second)
+            assertEquals(listOf("Привет", "Привет!"), repo.observeMessages(id).first().map { it.text })
+            assertEquals("Привет", repo.observeSession(id).first()!!.title)
+
+            repo.deleteMessagesFrom(id, first)
+            repo.addUserMessage(id, "Здравствуйте")
+            assertEquals("Здравствуйте", repo.observeSession(id).first()!!.title)
+        }
+
+    @Test
     fun emptySessionsAreHiddenFromHistory() =
         runBlocking {
             repo.startSession(TutorLanguage.FRENCH, Provider.OPENAI, "gpt")

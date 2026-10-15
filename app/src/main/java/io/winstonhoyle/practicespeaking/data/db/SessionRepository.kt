@@ -9,7 +9,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 
-/** Saves conversations and reads them back for History, detail, and search. */
+/** Saves conversations and reads them back for History, detail, and search. One method per DAO operation. */
+@Suppress("TooManyFunctions")
 class SessionRepository(private val dao: SessionDao, private val clock: () -> Long = System::currentTimeMillis) {
     /** Records which provider, model, and level the session uses; it keeps them for good, Continue included. */
     suspend fun startSession(language: TutorLanguage, provider: Provider, model: String, level: CefrLevel = CefrLevel.DEFAULT): Long =
@@ -58,6 +59,12 @@ class SessionRepository(private val dao: SessionDao, private val clock: () -> Lo
     /** Marks the session ended and stores its summary. A missing or unparsed summary is saved as empty. */
     suspend fun endSession(sessionId: Long, summary: Summary?) =
         dao.endSession(sessionId, clock(), summary?.mistakes, summary?.newWords, summary?.tip)
+
+    /** Deletes a message and every later one in its session. Going back to the start also clears the title, so the next message sets it. */
+    suspend fun deleteMessagesFrom(sessionId: Long, messageId: Long) {
+        dao.deleteMessagesFrom(sessionId, messageId)
+        dao.clearTitleIfEmpty(sessionId)
+    }
 
     /** Deletes a session; its messages go with it (cascade). */
     suspend fun deleteSession(sessionId: Long) = dao.deleteSession(sessionId)

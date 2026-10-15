@@ -19,7 +19,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.winstonhoyle.practicespeaking.R
-import io.winstonhoyle.practicespeaking.data.db.MessageEntity
+import io.winstonhoyle.practicespeaking.data.db.displayText
+import io.winstonhoyle.practicespeaking.data.db.isUser
+import io.winstonhoyle.practicespeaking.data.db.summary
+import io.winstonhoyle.practicespeaking.prompt.Summary
 import io.winstonhoyle.practicespeaking.ui.AppErrorBanner
 import io.winstonhoyle.practicespeaking.ui.ErrorAction
 import io.winstonhoyle.practicespeaking.ui.components.ChatMessageItem
@@ -129,7 +132,7 @@ fun SessionDetailScreen(
                     Transcript(
                         state = state,
                         header = "${formatSessionDate(session.startedAt)} · ${session.model}",
-                        summary = Triple(session.summaryMistakes, session.summaryNewWords, session.summaryTip),
+                        summary = session.summary,
                         scrollToMessageId = scrollToMessageId,
                         onHear = onHear,
                         onTranslate = onTranslate,
@@ -144,7 +147,7 @@ fun SessionDetailScreen(
 private fun Transcript(
     state: SessionDetailUiState,
     header: String,
-    summary: Triple<String?, String?, String?>,
+    summary: Summary?,
     scrollToMessageId: Long?,
     onHear: (String) -> Unit,
     onTranslate: (Long) -> Unit,
@@ -157,7 +160,6 @@ private fun Transcript(
         // +1 skips the header row.
         if (index >= 0) listState.scrollToItem(index + 1)
     }
-    val hasSummary = summary.toList().any { !it.isNullOrBlank() }
     LazyColumn(
         state = listState,
         verticalArrangement = Arrangement.spacedBy(PsTheme.spacing.md),
@@ -167,8 +169,8 @@ private fun Transcript(
         item(key = "header") { SecondaryText(header) }
         items(messages, key = { it.id }) { message ->
             ChatMessageItem(
-                text = message.stressed ?: message.text,
-                isUser = message.role == MessageEntity.ROLE_USER,
+                text = message.displayText,
+                isUser = message.isUser,
                 correction = message.correction,
                 translation = state.translations.visible(message.id, saved = message.translation),
                 translating = message.id in state.translations.loading,
@@ -177,10 +179,8 @@ private fun Transcript(
                 onHearPhrase = onHear,
             )
         }
-        if (hasSummary) {
-            item(key = "summary") {
-                SummaryCard(summary.first, summary.second, summary.third)
-            }
+        if (summary != null) {
+            item(key = "summary") { SummaryCard(summary.mistakes, summary.newWords, summary.tip) }
         }
     }
 }

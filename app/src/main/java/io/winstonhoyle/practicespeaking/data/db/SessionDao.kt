@@ -33,6 +33,12 @@ interface SessionDao {
     )
     suspend fun endSession(sessionId: Long, endedAt: Long, mistakes: String?, newWords: String?, tip: String?)
 
+    @Query("DELETE FROM messages WHERE sessionId = :sessionId AND id >= :messageId")
+    suspend fun deleteMessagesFrom(sessionId: Long, messageId: Long)
+
+    @Query("UPDATE sessions SET title = '' WHERE id = :sessionId AND NOT EXISTS (SELECT 1 FROM messages WHERE sessionId = :sessionId)")
+    suspend fun clearTitleIfEmpty(sessionId: Long)
+
     @Query("DELETE FROM sessions WHERE id = :sessionId")
     suspend fun deleteSession(sessionId: Long)
 
