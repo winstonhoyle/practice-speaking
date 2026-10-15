@@ -261,7 +261,8 @@ private fun Transcript(
                 onTranslate = { onTranslate(message.id) },
                 onHearPhrase = onReplay,
                 onEdit = if (message.isUser && state.canSend) ({ onEdit(message.id) }) else null,
-                modifier = Modifier.animateItem(),
+                // Fade in only: fade-out and slide animations drew cut messages over the rest while the keyboard resized the list.
+                modifier = Modifier.animateItem(fadeOutSpec = null, placementSpec = null),
             )
         }
         if (state.isListening) {

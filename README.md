@@ -160,7 +160,7 @@ echo 'ANTHROPIC_API_KEY=sk-ant-...' > .env
 ./gradlew testDebugUnitTest -Plive
 ```
 
-A provider without a key in `.env` is skipped, so a missing key never fails the run.
+A provider without a key in `.env` is skipped instead of failing.
 
 ### Pre-commit hooks
 
